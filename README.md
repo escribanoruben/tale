@@ -28,7 +28,7 @@ Each word's normalized initial must match the block letter (`l`, `c`, `d`, `s`).
 | Principle | Detail |
 |-----------|--------|
 | Randomness first | Password is generated; the phrase is derived, never the reverse |
-| Restricted alphabet | Top 20 most frequent word-initial letters per language |
+| Restricted alphabet | Top frequent word-initial letters per language (22 EN, 20 ES) |
 | Fixed template | `noun → adjective → verb → noun` per 4-character block |
 | No letter picking | User does not choose initials; TUI mode only picks among valid words |
 | Local-first | Works fully offline — word lists are embedded in the binary |
@@ -82,7 +82,7 @@ See `make help` for all targets.
 
 | Language | Code | Alphabet |
 |----------|------|----------|
-| English | `en` | 20 letters: `abcdefghilmnoprstuvw` |
+| English | `en` | 22 letters: `abcdefghijklmnoprstuvw` |
 | Spanish | `es` | 20 letters: `abcdefghijlmnopqrstv` |
 
 User language files live under `~/.tale/profiles/{language}.toml` and **replace** any built-in for that code. Customized languages load words only from `~/.tale/data/{language}/` (no embedded fallback). See `tale language list|show|init|new`.

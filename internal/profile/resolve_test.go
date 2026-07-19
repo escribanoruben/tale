@@ -16,8 +16,8 @@ func TestResolveBuiltin(t *testing.T) {
 	if !resolved.Builtin {
 		t.Fatal("expected builtin profile")
 	}
-	if len(resolved.Profile.Alphabet) != 20 {
-		t.Fatalf("alphabet length %d, want 20", len(resolved.Profile.Alphabet))
+	if len(resolved.Profile.Alphabet) != 22 {
+		t.Fatalf("alphabet length %d, want 22", len(resolved.Profile.Alphabet))
 	}
 }
 
