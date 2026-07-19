@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/escribanoruben/tales_vault_system/internal/profile"
+	"github.com/escribanoruben/tale/internal/profile"
 )
 
 func TestHelpViewIncludesShortcuts(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/escribanoruben/tales_vault_system/internal/wordprepare"
+	"github.com/escribanoruben/tale/internal/wordprepare"
 )
 
 func main() {

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/escribanoruben/tales_vault_system/internal/normalize"
-	"github.com/escribanoruben/tales_vault_system/internal/paths"
-	"github.com/escribanoruben/tales_vault_system/internal/profile"
+	"github.com/escribanoruben/tale/internal/normalize"
+	"github.com/escribanoruben/tale/internal/paths"
+	"github.com/escribanoruben/tale/internal/profile"
 )
 
 // POS identifies a grammatical category.

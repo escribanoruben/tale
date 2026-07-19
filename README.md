@@ -53,21 +53,46 @@ Restricting the alphabet does not collapse security: dropping rare initials cost
 
 ### Install
 
-**Pre-built binary** (no Go required) — pick the archive for your OS/arch from [GitHub Releases](https://github.com/escribanoruben/tales_vault_system/releases/latest), extract `tale`, and place it on your `PATH`.
+#### With Go (recommended)
 
-**With Go 1.22+:**
+If you have [Go 1.22+](https://go.dev/dl/) installed:
 
 ```bash
-go install github.com/escribanoruben/tales_vault_system/cmd/tale@latest
+go install github.com/escribanoruben/tale/cmd/tale@latest
 ```
 
-Pin a version with `@v0.1.0` instead of `@latest`.
-
-**From source:**
+Pin a specific release:
 
 ```bash
-git clone https://github.com/escribanoruben/tales_vault_system.git
-cd tales_vault_system
+go install github.com/escribanoruben/tale/cmd/tale@v0.1.1
+```
+
+> **Note:** Release `v0.1.0` used the previous module path `github.com/escribanoruben/tales_vault_system`. From `v0.1.1` onward, use `github.com/escribanoruben/tale`.
+
+Ensure `$(go env GOPATH)/bin` is on your `PATH`, then run `tale`.
+
+#### Pre-built binary (no Go required)
+
+Download from [GitHub Releases](https://github.com/escribanoruben/tale/releases/latest):
+
+| OS | CPU | Archive |
+|----|-----|---------|
+| Linux | x86_64 (Intel/AMD) | `*_linux_amd64.tar.gz` |
+| Linux | arm64 (Raspberry Pi, etc.) | `*_linux_arm64.tar.gz` |
+| macOS | Apple Silicon (M1/M2/M3) | `*_darwin_arm64.tar.gz` |
+| macOS | Intel | `*_darwin_amd64.tar.gz` |
+| Windows | x86_64 | `*_windows_amd64.zip` |
+| Windows | arm64 | `*_windows_arm64.zip` |
+
+Extract the `tale` binary (on Windows, `tale.exe`) and place it on your `PATH`.
+
+Verify with `tale version`. Checksums are in `checksums.txt` on the same release page.
+
+#### From source
+
+```bash
+git clone https://github.com/escribanoruben/tale.git
+cd tale
 make build          # or: go build -o tale ./cmd/tale
 make install        # optional: install to $GOPATH/bin
 ```

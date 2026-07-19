@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/escribanoruben/tales_vault_system/internal/worddata"
+	"github.com/escribanoruben/tale/internal/worddata"
 )
 
 func main() {

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/escribanoruben/tales_vault_system/internal/normalize"
+	"github.com/escribanoruben/tale/internal/normalize"
 )
 
 type wordEntry struct {

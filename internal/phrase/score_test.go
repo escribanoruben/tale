@@ -3,7 +3,7 @@ package phrase
 import (
 	"testing"
 
-	"github.com/escribanoruben/tales_vault_system/internal/dictionary"
+	"github.com/escribanoruben/tale/internal/dictionary"
 )
 
 func TestScorePhraseUsesFrequencyRank(t *testing.T) {

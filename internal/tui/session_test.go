@@ -3,9 +3,9 @@ package tui
 import (
 	"testing"
 
-	"github.com/escribanoruben/tales_vault_system/internal/dictionary"
-	"github.com/escribanoruben/tales_vault_system/internal/normalize"
-	"github.com/escribanoruben/tales_vault_system/internal/profile"
+	"github.com/escribanoruben/tale/internal/dictionary"
+	"github.com/escribanoruben/tale/internal/normalize"
+	"github.com/escribanoruben/tale/internal/profile"
 )
 
 func TestSessionRandomFill(t *testing.T) {

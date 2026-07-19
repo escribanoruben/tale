@@ -1,8 +1,8 @@
 package phrase
 
 import (
-	"github.com/escribanoruben/tales_vault_system/internal/dictionary"
-	"github.com/escribanoruben/tales_vault_system/internal/normalize"
+	"github.com/escribanoruben/tale/internal/dictionary"
+	"github.com/escribanoruben/tale/internal/normalize"
 )
 
 func scorePhrase(words []string, buckets []*dictionary.Bucket) int64 {

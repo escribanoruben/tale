@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/escribanoruben/tales_vault_system/internal/dictionary"
-	"github.com/escribanoruben/tales_vault_system/internal/profile"
+	"github.com/escribanoruben/tale/internal/dictionary"
+	"github.com/escribanoruben/tale/internal/profile"
 )
 
 func TestSessionCycleWord(t *testing.T) {

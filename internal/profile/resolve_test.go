@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/escribanoruben/tales_vault_system/internal/paths"
+	"github.com/escribanoruben/tale/internal/paths"
 )
 
 func TestResolveBuiltin(t *testing.T) {

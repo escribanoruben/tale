@@ -6,8 +6,8 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/escribanoruben/tales_vault_system/internal/normalize"
-	"github.com/escribanoruben/tales_vault_system/internal/phrase"
+	"github.com/escribanoruben/tale/internal/normalize"
+	"github.com/escribanoruben/tale/internal/phrase"
 )
 
 type uiMode int

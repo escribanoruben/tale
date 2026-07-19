@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/escribanoruben/tales_vault_system/internal/paths"
-	"github.com/escribanoruben/tales_vault_system/internal/worddata"
+	"github.com/escribanoruben/tale/internal/paths"
+	"github.com/escribanoruben/tale/internal/worddata"
 )
 
 var languageRe = regexp.MustCompile(`^[a-z][a-z0-9-]{0,7}$`)

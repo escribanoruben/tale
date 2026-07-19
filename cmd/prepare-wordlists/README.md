@@ -8,7 +8,7 @@ Regenerates curated English/Spanish word lists from upstream sources.
 go run ./cmd/prepare-wordlists
 ```
 
-Run from the repository root (or pass `--repo /path/to/tales_vault_system`).
+Run from the repository root (or pass `--repo /path/to/tale`).
 
 ## Output
 

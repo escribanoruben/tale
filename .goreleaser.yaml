@@ -1,3 +1,5 @@
+project_name: tale
+
 version: 2
 
 before:
@@ -44,4 +46,4 @@ changelog:
 release:
   github:
     owner: escribanoruben
-    name: tales_vault_system
+    name: tale

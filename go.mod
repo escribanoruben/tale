@@ -1,4 +1,4 @@
-module github.com/escribanoruben/tales_vault_system
+module github.com/escribanoruben/tale
 
 go 1.24.2
 

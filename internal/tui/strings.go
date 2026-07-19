@@ -1,6 +1,6 @@
 package tui
 
-import "github.com/escribanoruben/tales_vault_system/internal/profile"
+import "github.com/escribanoruben/tale/internal/profile"
 
 type uiText struct {
 	commandTagline       string

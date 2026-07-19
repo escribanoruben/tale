@@ -7,10 +7,10 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/escribanoruben/tales_vault_system/internal/dictionary"
-	"github.com/escribanoruben/tales_vault_system/internal/normalize"
-	"github.com/escribanoruben/tales_vault_system/internal/password"
-	"github.com/escribanoruben/tales_vault_system/internal/profile"
+	"github.com/escribanoruben/tale/internal/dictionary"
+	"github.com/escribanoruben/tale/internal/normalize"
+	"github.com/escribanoruben/tale/internal/password"
+	"github.com/escribanoruben/tale/internal/profile"
 )
 
 const searchTopK = 20

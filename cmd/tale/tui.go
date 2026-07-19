@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/escribanoruben/tales_vault_system/internal/dictionary"
-	"github.com/escribanoruben/tales_vault_system/internal/profile"
-	"github.com/escribanoruben/tales_vault_system/internal/tui"
+	"github.com/escribanoruben/tale/internal/dictionary"
+	"github.com/escribanoruben/tale/internal/profile"
+	"github.com/escribanoruben/tale/internal/tui"
 )
 
 func runTUI(args []string) {
