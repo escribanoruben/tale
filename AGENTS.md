@@ -4,7 +4,7 @@ IDE-agnostic instructions for coding agents working in this repository.
 
 ## Project
 
-Go CLI that generates CSPRNG passwords and derives mnemonic phrases from a fixed template (`noun → adjective → verb → noun` per 4-character block). Local-first: no network at runtime; word lists are embedded.
+Go CLI that generates CSPRNG passwords and derives mnemonic phrases from a grammatical template per language (e.g. EN: `adjective → noun → verb → noun`; ES: `noun → adjective → verb → noun` per 4-character block). Local-first: no network at runtime; word lists are embedded.
 
 - Entrypoint: `cmd/tale`
 - Languages: built-in `en` / `es`; custom under `~/.tale`

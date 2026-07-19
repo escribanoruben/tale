@@ -2,11 +2,16 @@
 
 ### Requirement: Fixed phrase template
 
-The system SHALL build each mnemonic block as exactly four words following the template: noun, adjective, verb, noun.
+The system SHALL build each mnemonic block as exactly four words following the `phrase_template` defined in the active language profile.
 
-#### Scenario: Template order
+#### Scenario: English template order
 
-- **WHEN** a 4-character block `lcds` is converted to a phrase
+- **WHEN** a 4-character block `lcds` is converted to a phrase in English
+- **THEN** the phrase consists of an adjective starting with `l`, a noun starting with `c`, a verb starting with `d`, and a noun starting with `s`
+
+#### Scenario: Spanish template order
+
+- **WHEN** a 4-character block `lcds` is converted to a phrase in Spanish
 - **THEN** the phrase consists of a noun starting with `l`, an adjective starting with `c`, a verb starting with `d`, and a noun starting with `s`
 
 ### Requirement: Initial letter matching

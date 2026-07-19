@@ -13,15 +13,19 @@ The password comes first (CSPRNG). Mnemonic phrases are built afterward from a f
               ↓
          blocks of 4: lcds | mrtp | ...
               ↓
-    noun + adjective + verb + noun (per block)
+    four words per block (template varies by language)
               ↓
     password + mnemonic phrases + recovery rules
 ```
 
-**Example** (English block `lcds`):
+**Example** (English block `lcds` — adjective, noun, verb, noun):
 
-- *Lion cowardly drifts silver*
-- *Lamb clumsy dances slowly*
+- *Lazy cow drifts silver*
+- *Large cat dances slowly*
+
+**Example** (Spanish block `lcds` — sustantivo, adjetivo, verbo, sustantivo):
+
+- *León cobarde deriva plata*
 
 Each word's normalized initial must match the block letter (`l`, `c`, `d`, `s`).
 
@@ -32,7 +36,7 @@ Each word's normalized initial must match the block letter (`l`, `c`, `d`, `s`).
 | Randomness first | Password is generated; the phrase is derived, never the reverse |
 | Language-adaptive alphabet | Each language defines its own restricted letter set from corpus frequency — not a global fixed size |
 | Mnemonics over raw entropy | Fewer initials trade a small entropy cost for better phrase quality; default passwords still carry ~86–89 bits |
-| Fixed template | `noun → adjective → verb → noun` per 4-character block |
+| Fixed template | Per language — EN: `adjective → noun → verb → noun`; ES: `noun → adjective → verb → noun` |
 | No letter picking | User does not choose initials; TUI mode only picks among valid words |
 | Local-first | Works fully offline — word lists are embedded in the binary |
 | Single binary | ~3 MB with curated EN + ES dictionaries (~13k words, ~106 KB of text) |
