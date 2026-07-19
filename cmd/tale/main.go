@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ruben/tales_vault_system/internal/worddata"
+	"github.com/escribanoruben/tales_vault_system/internal/worddata"
 )
 
 func main() {
@@ -18,6 +18,9 @@ func main() {
 	}
 
 	switch args[0] {
+	case "version", "-v", "--version":
+		printVersion()
+		return
 	case "help", "-h", "--help":
 		usage()
 		return
@@ -104,6 +107,7 @@ Usage:
   tale language new <language> --alphabet LETTERS [--display-name NAME] [--force] [--force-data]
   tale profile …                         deprecated alias for language …
   tale stats [--json] [--min N]          show embedded word-list statistics
+  tale version                           show version, commit, and build date
   tale help                              show this help
 
 Options (TUI and generate):

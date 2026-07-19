@@ -8,11 +8,11 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/ruben/tales_vault_system/internal/dictionary"
-	"github.com/ruben/tales_vault_system/internal/normalize"
-	"github.com/ruben/tales_vault_system/internal/password"
-	"github.com/ruben/tales_vault_system/internal/phrase"
-	"github.com/ruben/tales_vault_system/internal/profile"
+	"github.com/escribanoruben/tales_vault_system/internal/dictionary"
+	"github.com/escribanoruben/tales_vault_system/internal/normalize"
+	"github.com/escribanoruben/tales_vault_system/internal/password"
+	"github.com/escribanoruben/tales_vault_system/internal/phrase"
+	"github.com/escribanoruben/tales_vault_system/internal/profile"
 )
 
 const visibleRadius = 2

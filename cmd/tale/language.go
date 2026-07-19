@@ -7,8 +7,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/ruben/tales_vault_system/internal/paths"
-	"github.com/ruben/tales_vault_system/internal/profile"
+	"github.com/escribanoruben/tales_vault_system/internal/paths"
+	"github.com/escribanoruben/tales_vault_system/internal/profile"
 )
 
 func runLanguage(args []string) {

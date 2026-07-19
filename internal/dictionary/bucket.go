@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ruben/tales_vault_system/internal/normalize"
-	"github.com/ruben/tales_vault_system/internal/worddata"
+	"github.com/escribanoruben/tales_vault_system/internal/normalize"
+	"github.com/escribanoruben/tales_vault_system/internal/worddata"
 )
 
 // Bucket is a letter/POS word list: alphabetical for display, ranked for selection.

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
-	"github.com/ruben/tales_vault_system/internal/paths"
-	"github.com/ruben/tales_vault_system/internal/profile"
+	"github.com/escribanoruben/tales_vault_system/internal/paths"
+	"github.com/escribanoruben/tales_vault_system/internal/profile"
 )
 
 const defaultPhrases = 5

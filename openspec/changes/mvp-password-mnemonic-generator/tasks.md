@@ -47,4 +47,4 @@
 - [ ] 7.2 Unit tests: phrase recovery round-trip (phrase initials → password block)
 - [ ] 7.3 Integration test: `generate` with both default profiles
 - [x] 7.4 Document build/run instructions in project README
-- [ ] 7.5 Release binary builds for Linux/macOS/Windows
+- [x] 7.5 Release binary builds for Linux/macOS/Windows
