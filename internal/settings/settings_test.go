@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ruben/tales_vault_system/internal/settings"
+	"github.com/escribanoruben/tales_vault_system/internal/settings"
 )
 
 func TestLoadSaveRoundTrip(t *testing.T) {

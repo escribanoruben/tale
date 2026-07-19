@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ruben/tales_vault_system/internal/phrase"
-	"github.com/ruben/tales_vault_system/internal/profile"
+	"github.com/escribanoruben/tales_vault_system/internal/phrase"
+	"github.com/escribanoruben/tales_vault_system/internal/profile"
 )
 
 func runGenerate(args []string) {

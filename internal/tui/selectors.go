@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/ruben/tales_vault_system/internal/password"
-	"github.com/ruben/tales_vault_system/internal/profile"
+	"github.com/escribanoruben/tales_vault_system/internal/password"
+	"github.com/escribanoruben/tales_vault_system/internal/profile"
 )
 
 const (

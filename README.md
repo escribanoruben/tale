@@ -51,10 +51,33 @@ Restricting the alphabet does not collapse security: dropping rare initials cost
 
 ## Quick start
 
+### Install
+
+**Pre-built binary** (no Go required) — pick the archive for your OS/arch from [GitHub Releases](https://github.com/escribanoruben/tales_vault_system/releases/latest), extract `tale`, and place it on your `PATH`.
+
+**With Go 1.22+:**
+
 ```bash
+go install github.com/escribanoruben/tales_vault_system/cmd/tale@latest
+```
+
+Pin a version with `@v0.1.0` instead of `@latest`.
+
+**From source:**
+
+```bash
+git clone https://github.com/escribanoruben/tales_vault_system.git
+cd tales_vault_system
 make build          # or: go build -o tale ./cmd/tale
+make install        # optional: install to $GOPATH/bin
+```
+
+### Run
+
+```bash
 make run            # TUI without installing (language from ~/.tale/settings or system locale)
 ./tale stats        # or: make stats
+./tale version      # show version, commit, and build date
 
 # Generate password + mnemonic phrases (automatic)
 ./tale generate --language en
@@ -65,9 +88,6 @@ make run            # TUI without installing (language from ~/.tale/settings or 
 ./tale tui --language en
 ./tale tui --language en --password abcdefghijklmnopqrst
 ./tale tui --language es
-
-# Install (optional)
-make install        # or: go install ./cmd/tale
 
 # Customize a built-in language (replaces embedded defaults for that code)
 tale language init es

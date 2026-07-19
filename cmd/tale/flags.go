@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/ruben/tales_vault_system/internal/profile"
-	"github.com/ruben/tales_vault_system/internal/settings"
+	"github.com/escribanoruben/tales_vault_system/internal/profile"
+	"github.com/escribanoruben/tales_vault_system/internal/settings"
 )
 
 // runConfig holds merged CLI flags and user settings.

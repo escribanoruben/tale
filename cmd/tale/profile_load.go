@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ruben/tales_vault_system/internal/dictionary"
-	"github.com/ruben/tales_vault_system/internal/profile"
+	"github.com/escribanoruben/tales_vault_system/internal/dictionary"
+	"github.com/escribanoruben/tales_vault_system/internal/profile"
 )
 
 func resolveProfileAndDictionary(id string) (profile.Resolved, *dictionary.Dictionary, error) {
