@@ -1,4 +1,6 @@
-# Tales Vault System
+# tale
+
+**A CLI implementation of Tales Vault System.**
 
 Generate cryptographically random passwords and derive memorable mnemonic phrases from them — without choosing letters or words yourself.
 
