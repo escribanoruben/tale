@@ -33,3 +33,5 @@ Statistics are available via `tale stats` (embedded data) — no separate stats 
 | Spanish | `doozan/spanish_data` lemmas | Frequency threshold, no diminutives |
 
 Up to **120** words per `(language, letter, part of speech)` file.
+
+Builtin alphabet sizes (top initials by corpus weight): **22** for English (`j`, `k` added), **20** for Spanish.

@@ -12,11 +12,16 @@ import (
 )
 
 const (
-	topLetterCount      = 20
 	minWordsPerBucket   = 8
 	maxWordsPerBucket   = 120
 	minSpanishFrequency = 2000
 )
+
+// Builtin alphabet sizes: curated from corpus frequency per language.
+var topLetterCountByLanguage = map[string]int{
+	"en": 22,
+	"es": 20,
+}
 
 var posFiles = map[string]string{
 	"noun":       "nouns.tsv",
@@ -73,8 +78,12 @@ func Prepare(opts Options) ([]LanguageResult, []string, error) {
 			return nil, nil, fmt.Errorf("%s: %w", item.language, err)
 		}
 
-		letters := computeTopLetters(buckets, topLetterCount)
-		fmt.Printf("  top %d initials by corpus weight: %s\n", topLetterCount, strings.Join(letters, ""))
+		topN := topLetterCountByLanguage[item.language]
+		if topN <= 0 {
+			topN = 20
+		}
+		letters := computeTopLetters(buckets, topN)
+		fmt.Printf("  top %d initials by corpus weight: %s\n", topN, strings.Join(letters, ""))
 
 		trimmed := trimToBucketLimits(buckets, letters)
 		counts := bucketCounts(trimmed, letters)

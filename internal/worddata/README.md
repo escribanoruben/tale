@@ -25,7 +25,7 @@ absence	3
 
 Up to **120** curated words per file.
 
-The alphabet for each language is defined in `profiles/*.toml` (20 letters by default). User profiles live in `~/.tale/profiles/`.
+The alphabet for each language is defined in `profiles/*.toml` (22 letters for English, 20 for Spanish by default). User profiles live in `~/.tale/profiles/`.
 
 ## User install layout
 
@@ -56,7 +56,7 @@ go build -o tale ./cmd/tale
 
 | Language | Letters |
 |----------|---------|
-| English | `abcdefghilmnoprstuvw` |
+| English | `abcdefghijklmnoprstuvw` |
 | Spanish | `abcdefghijlmnopqrstv` |
 
 ## Regenerating

@@ -3,7 +3,7 @@ language = "en"
 display_name = "English (default)"
 password_length = 20
 block_size = 4
-alphabet = "abcdefghilmnoprstuvw"
+alphabet = "abcdefghijklmnoprstuvw"
 phrase_template = ["noun", "adjective", "verb", "noun"]
 data_layout = "letter"
 
