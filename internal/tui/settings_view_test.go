@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/escribanoruben/tale/internal/profile"
 )
 
 func TestSettingsViewShowsAllOptions(t *testing.T) {
@@ -64,8 +65,28 @@ func TestSettingsEscDiscardsWithoutApply(t *testing.T) {
 	ctrl := newSettingsController(applied)
 	ctrl.draft.Phrases = 6
 	exit := handleSettingsKey(&ctrl, tea.KeyMsg{Type: tea.KeyEsc}, []string{"en", "es"}, applied)
+	if exit != settingsExitConfirmDiscard {
+		t.Fatalf("esc exit = %v, want confirm discard", exit)
+	}
+}
+
+func TestSettingsEscWithoutPendingUnfocuses(t *testing.T) {
+	applied := AppSettings{Language: "en", Phrases: 5}
+	ctrl := newSettingsController(applied)
+	exit := handleSettingsKey(&ctrl, tea.KeyMsg{Type: tea.KeyEsc}, []string{"en", "es"}, applied)
 	if exit != settingsExitUnfocus {
 		t.Fatalf("esc exit = %v, want unfocus", exit)
+	}
+}
+
+func TestSettingsDiscardConfirmShownInView(t *testing.T) {
+	applied := AppSettings{Language: "en", Phrases: 5}
+	ctrl := newSettingsController(applied)
+	ctrl.draft.Phrases = 6
+	view, _ := renderSettingsView(applied, []string{"en", "es"}, ctrl, 100)
+	view += renderSettingsDiscardConfirm(uiFor(profile.Profile{Language: "en"}), 100)
+	if !strings.Contains(view, "Discard unapplied changes?") {
+		t.Fatalf("expected discard prompt in view:\n%s", view)
 	}
 }
 

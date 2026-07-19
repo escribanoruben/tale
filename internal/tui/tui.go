@@ -282,7 +282,8 @@ type Model struct {
 	session        *Session
 	settings       AppSettings
 	settingsCtrl   settingsController
-	settingsFocus  bool
+	settingsFocus         bool
+	settingsConfirmDiscard bool
 	languages      []string
 	keys           keyMap
 	mode           uiMode
@@ -341,6 +342,9 @@ func (m Model) Init() tea.Cmd { return nil }
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if m.mode == modeQuitConfirm {
+			return m.handleQuitConfirm(msg)
+		}
 		if m.mode == modeHelp {
 			return m.handleHelp(msg)
 		}
@@ -359,8 +363,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch {
 		case msg.Type == tea.KeyEsc:
-			m.session.Quitting = true
-			return m, tea.Quit
+			m.mode = modeQuitConfirm
+			m.session.Err = nil
+			return m, nil
 		case msg.String() == "?":
 			m.mode = modeHelp
 			m.session.Err = nil
@@ -513,6 +518,18 @@ func (m Model) handleRandomMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m Model) handleQuitConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "y", "Y", "s", "S":
+		m.session.Quitting = true
+		return m, tea.Quit
+	case "n", "N", "esc":
+		m.mode = modeNormal
+		m.session.Err = nil
+	}
+	return m, nil
+}
+
 func (m Model) handleHelp(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch {
 	case msg.Type == tea.KeyEsc, key.Matches(msg, m.keys.Enter), msg.String() == "?":
@@ -569,6 +586,11 @@ func (m Model) View() string {
 	if m.settingsFocus {
 		view, hits := renderSettingsView(m.settings, m.languages, m.settingsCtrl, m.width)
 		b.WriteString(view)
+		if m.settingsConfirmDiscard {
+			text := uiFor(s.Profile)
+			innerW := viewContentWidth(m.width)
+			b.WriteString(renderSettingsDiscardConfirm(text, innerW))
+		}
 		if m.hits != nil {
 			m.hits.addZones(hits)
 		}
@@ -664,6 +686,9 @@ func (m Model) appendPickerFooter(b *strings.Builder, text uiText, registerHits 
 	if m.mode == modeChangeLetter {
 		b.WriteString("\n\n")
 		b.WriteString(renderOverlay(text.changeLetter, []string{text.changeCancel}))
+	}
+	if m.mode == modeQuitConfirm {
+		b.WriteString(renderQuitConfirm(text, viewContentWidth(m.width)))
 	}
 }
 
