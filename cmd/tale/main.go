@@ -110,13 +110,12 @@ Options (TUI and generate):
   --language LANG          language code (en, es, or a custom language; saved to ~/.tale/settings.toml)
   --phrases N              number of mnemonic phrases (default from settings or 5)
   --length N               password length (overrides --phrases)
-  --allow-repeat           allow reusing words in the mnemonic
   --allow-adjacent-repeats allow consecutive identical password letters
 
 Settings file: ~/.tale/settings.toml
 Languages:     ~/.tale/profiles/{language}.toml (overrides built-in en/es)
 Word data:     ~/.tale/data/{language}/ (required for customized languages; no embed fallback)
 
-TUI: Space/⌫ word  ←→ slot  ↑↓ phrase  ·  n/p h/l j/k vim  s settings  / search  Enter show result  q quit
+TUI: Space/⌫ word  ←→ slot  ↑↓ phrase  ·  n/p h/l j/k vim  s settings  ? help  Enter show result  Esc quit
 `)
 }

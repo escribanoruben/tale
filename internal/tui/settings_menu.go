@@ -9,14 +9,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type settingsUIState int
-
-const (
-	settingsUIList settingsUIState = iota
-	settingsUIPick
-	settingsUIConfirm
-)
-
 type settingsExit int
 
 const (
@@ -26,12 +18,18 @@ const (
 	settingsExitQuitApp
 )
 
+const (
+	settingsActionApply = iota
+	settingsActionDiscard
+	settingsActionCount
+)
+
 type settingsController struct {
-	draft        AppSettings
-	field        int
-	state        settingsUIState
-	pickIndex    int
-	confirmIndex int // 0 = apply, 1 = discard
+	draft         AppSettings
+	focusField    int
+	focusOption   int
+	focusOnAction bool
+	focusAction   int
 }
 
 func newSettingsController(initial AppSettings) settingsController {
@@ -39,39 +37,118 @@ func newSettingsController(initial AppSettings) settingsController {
 	return settingsController{draft: initial}
 }
 
-func (c *settingsController) openPicker(languages []string) {
-	c.state = settingsUIPick
-	c.pickIndex = currentPickIndex(c.field, c.draft, languages)
+func (c *settingsController) syncFocusFromDraft(languages []string) {
+	c.focusOnAction = false
+	c.focusField = settingFieldLanguage
+	c.focusOption = currentPickIndex(c.focusField, c.draft, languages)
 }
 
-func (c *settingsController) closePicker() {
-	c.state = settingsUIList
-}
-
-func (c *settingsController) moveField(delta int) {
-	c.field = (c.field + delta + settingFieldCount) % settingFieldCount
-}
-
-func (c *settingsController) movePick(delta int, languages []string) {
-	count := pickOptionCount(c.field, languages)
-	if count == 0 {
+func (c *settingsController) jumpToSection(field int, languages []string) {
+	if field < 0 || field >= settingFieldCount {
 		return
 	}
-	c.pickIndex = (c.pickIndex + delta + count) % count
+	c.focusOnAction = false
+	c.focusField = field
+	c.focusOption = currentPickIndex(field, c.draft, languages)
 }
 
-func (c *settingsController) confirmPick(languages []string) {
-	applyPickToDraft(&c.draft, c.field, c.pickIndex, languages)
-	c.closePicker()
+func (c *settingsController) hasPendingChanges(applied AppSettings) bool {
+	return settingsChangeKind(applied, c.draft) != settingsChangeNone
 }
 
-func pickOptionCount(field int, languages []string) int {
+func (c *settingsController) totalOptionRows(languages []string) int {
+	n := 0
+	for field := 0; field < settingFieldCount; field++ {
+		n += fieldOptionCount(field, languages)
+	}
+	return n
+}
+
+func (c *settingsController) totalFocusRows(languages []string, applied AppSettings) int {
+	n := c.totalOptionRows(languages)
+	if c.hasPendingChanges(applied) {
+		n += settingsActionCount
+	}
+	return n
+}
+
+func (c *settingsController) flatFocusIndex(languages []string) int {
+	idx := 0
+	for field := 0; field < settingFieldCount; field++ {
+		count := fieldOptionCount(field, languages)
+		if field == c.focusField {
+			return idx + c.focusOption
+		}
+		idx += count
+	}
+	return 0
+}
+
+func (c *settingsController) setFlatFocusIndex(i int, languages []string) {
+	remaining := i
+	for field := 0; field < settingFieldCount; field++ {
+		count := fieldOptionCount(field, languages)
+		if remaining < count {
+			c.focusField = field
+			c.focusOption = remaining
+			return
+		}
+		remaining -= count
+	}
+}
+
+func (c *settingsController) currentFocusIndex(languages []string, applied AppSettings) int {
+	if c.focusOnAction {
+		return c.totalOptionRows(languages) + c.focusAction
+	}
+	return c.flatFocusIndex(languages)
+}
+
+func (c *settingsController) moveFocus(delta int, languages []string, applied AppSettings) {
+	total := c.totalFocusRows(languages, applied)
+	if total == 0 {
+		return
+	}
+	next := (c.currentFocusIndex(languages, applied) + delta + total) % total
+	optRows := c.totalOptionRows(languages)
+	if next < optRows {
+		c.focusOnAction = false
+		c.setFlatFocusIndex(next, languages)
+		return
+	}
+	c.focusOnAction = true
+	c.focusAction = next - optRows
+}
+
+func (c *settingsController) selectFocused(languages []string) {
+	applyPickToDraft(&c.draft, c.focusField, c.focusOption, languages)
+}
+
+func (c *settingsController) selectOption(field, option int, languages []string) {
+	c.focusOnAction = false
+	c.focusField = field
+	c.focusOption = option
+	applyPickToDraft(&c.draft, field, option, languages)
+}
+
+func (c *settingsController) focusActionRow(action int, languages []string, applied AppSettings) {
+	if !c.hasPendingChanges(applied) {
+		return
+	}
+	if action < 0 || action >= settingsActionCount {
+		return
+	}
+	c.focusOnAction = true
+	c.focusAction = action
+}
+
+func fieldOptionCount(field int, languages []string) int {
 	switch field {
 	case settingFieldLanguage:
 		return len(languages)
 	case settingFieldPhrases:
 		return len(commonPhraseCounts)
-	case settingFieldNoAdjacent, settingFieldAllowRepeat:
+	case settingFieldNoAdjacent:
 		return 2
 	default:
 		return 0
@@ -86,11 +163,6 @@ func currentPickIndex(field int, draft AppSettings, languages []string) int {
 		return phrasePresetIndex(draft.Phrases)
 	case settingFieldNoAdjacent:
 		if !draft.AllowAdjacentRepeats {
-			return 0
-		}
-		return 1
-	case settingFieldAllowRepeat:
-		if draft.AllowRepeat {
 			return 0
 		}
 		return 1
@@ -111,8 +183,32 @@ func applyPickToDraft(draft *AppSettings, field, pickIndex int, languages []stri
 		}
 	case settingFieldNoAdjacent:
 		draft.AllowAdjacentRepeats = pickIndex != 0
-	case settingFieldAllowRepeat:
-		draft.AllowRepeat = pickIndex == 0
+	}
+}
+
+func buildFieldOptions(text uiText, field int, draft AppSettings, languages []string) []string {
+	switch field {
+	case settingFieldLanguage:
+		opts := make([]string, len(languages))
+		for i, lang := range languages {
+			opts[i] = languageOptionLabel(lang)
+		}
+		return opts
+	case settingFieldPhrases:
+		_, blockSize := profileMetrics(draft.Language)
+		preventAdjacent := !draft.AllowAdjacentRepeats
+		opts := make([]string, len(commonPhraseCounts))
+		for i, count := range commonPhraseCounts {
+			passLen := phrasePasswordLength(count, blockSize)
+			bits := phraseEntropyBits(draft.Language, count, preventAdjacent)
+			summary := fmt.Sprintf(text.phraseOptionSummary, count, passLen, math.Round(bits))
+			opts[i] = summary + " — " + phraseUseCase(text, count)
+		}
+		return opts
+	case settingFieldNoAdjacent:
+		return []string{text.settingsAdjacentPrevent, text.settingsAdjacentAllow}
+	default:
+		return nil
 	}
 }
 
@@ -124,8 +220,6 @@ func settingsFieldLabel(text uiText, field int) string {
 		return text.settingsAllowAdjacent
 	case settingFieldPhrases:
 		return text.settingsPhrases
-	case settingFieldAllowRepeat:
-		return text.settingsAllowRepeat
 	default:
 		return ""
 	}
@@ -142,8 +236,6 @@ func settingsFieldValue(text uiText, field int, draft AppSettings) string {
 		phrases := snapPhraseCount(draft.Phrases)
 		bits := phraseEntropyBits(draft.Language, phrases, preventAdjacent)
 		return fmt.Sprintf("%d (~%.0f %s)", phrases, bits, text.entropyBitsUnit)
-	case settingFieldAllowRepeat:
-		return boolWord(text, draft.AllowRepeat)
 	default:
 		return ""
 	}
@@ -156,13 +248,19 @@ func boolWord(text uiText, yes bool) string {
 	return text.no
 }
 
+func selectionBox(selected bool) string {
+	if selected {
+		return "[x]"
+	}
+	return "[ ]"
+}
+
 func renderSettingsSummary(s AppSettings) string {
 	text := uiForLang(s.Language)
 	parts := []string{
 		fmt.Sprintf("%s %s", text.settingsLanguage, languageOptionLabel(s.Language)),
 		fmt.Sprintf("%s %s", text.settingsAllowAdjacent, boolWord(text, !s.AllowAdjacentRepeats)),
 		fmt.Sprintf("%s %s", text.settingsPhrases, settingsFieldValue(text, settingFieldPhrases, s)),
-		fmt.Sprintf("%s %s", text.settingsAllowRepeat, boolWord(text, s.AllowRepeat)),
 	}
 	return labelStyle.Render(text.settingsBarPrefix) + " " + joinUIParts(parts, " · ")
 }
@@ -177,56 +275,42 @@ func renderSettingsSummaryBar(s AppSettings) (string, []hitZone) {
 	return rendered, []hitZone{fullRow(0, h-1, hitSettingsPanel, 0)}
 }
 
-// renderSettingsModal draws the full settings editor as a modal panel.
-func renderSettingsModal(s AppSettings, languages []string, ctrl settingsController) (string, []hitZone) {
+// renderSettingsView draws the full-screen settings editor.
+func renderSettingsView(s AppSettings, languages []string, ctrl settingsController, termWidth int) (string, []hitZone) {
 	text := uiForLang(s.Language)
-	style := panelStyle.BorderForeground(lipgloss.Color("205"))
+	innerW := viewContentWidth(termWidth)
 	var lines []string
 	var contentHits []hitZone
-	lines = append(lines, titleStyle.Render(text.settingsTitle))
+	lines = append(lines, appTitleStyle.Render(text.settingsTitle))
+	lines = append(lines, "")
+	lines = append(lines, renderWrapped(labelStyle, innerW, text.settingsSubtitle))
 	lines = append(lines, "")
 
-	switch ctrl.state {
-	case settingsUIPick:
-		pickLines, pickHits := settingsPickerLines(text, ctrl, languages, len(lines))
-		lines = append(lines, pickLines...)
-		contentHits = append(contentHits, pickHits...)
-		lines = append(lines, "", helpStyle.Render(text.settingsPickHelp))
-	case settingsUIConfirm:
-		listLines, _ := settingsListLines(text, ctrl, len(lines))
-		lines = append(lines, listLines...)
+	groupLines, groupHits := settingsOptionGroups(text, ctrl, languages, len(lines), innerW)
+	lines = append(lines, groupLines...)
+	contentHits = append(contentHits, groupHits...)
+
+	if kind := settingsChangeKind(s, ctrl.draft); kind != settingsChangeNone {
 		lines = append(lines, "")
-		kind := settingsChangeKind(s, ctrl.draft)
-		confirmLines, confirmHits := settingsConfirmLines(text, ctrl, kind, len(lines))
-		lines = append(lines, confirmLines...)
-		contentHits = append(contentHits, confirmHits...)
-		lines = append(lines, "", helpStyle.Render(text.settingsConfirmHelp))
-	default:
-		listLines, listHits := settingsListLines(text, ctrl, len(lines))
-		lines = append(lines, listLines...)
-		contentHits = append(contentHits, listHits...)
-		lines = append(lines, "")
-		if kind := settingsChangeKind(s, ctrl.draft); kind != settingsChangeNone {
-			lines = append(lines, renderSettingsPendingHint(ctrl.draft.Language, kind), "")
+		if kind == settingsChangePassword {
+			lines = append(lines, renderWrapped(warnStyle, innerW, text.settingsRegenPassword))
+		} else {
+			lines = append(lines, renderSettingsPendingHint(ctrl.draft.Language, kind))
 		}
-		lines = append(lines, helpStyle.Render(text.settingsListHelp))
+		actionLines, actionHits := settingsActionLines(text, ctrl, s, len(lines), innerW)
+		lines = append(lines, actionLines...)
+		contentHits = append(contentHits, actionHits...)
 	}
 
-	rendered := style.Render(strings.Join(lines, "\n"))
-	h := visualHeight(rendered)
-	out := []hitZone{fullRow(0, h-1, hitSettingsPanel, 0)}
-	for _, z := range contentHits {
-		out = append(out, fullRow(z.y0+1, z.y1+1, z.kind, z.index))
-	}
-	return rendered, out
+	lines = append(lines, "", renderWrapped(helpStyle, innerW, settingsListHelp(text, s, ctrl.draft)))
+	return strings.Join(lines, "\n"), contentHits
 }
 
-// renderSettingsBar draws the compact strip shown above the modal while editing.
-func renderSettingsBar(s AppSettings) string {
-	text := uiForLang(s.Language)
-	body := renderSettingsSummary(s)
-	body += "\n\n" + helpStyle.Render(text.settingsModalDismiss)
-	return panelStyle.Render(body)
+func settingsListHelp(text uiText, applied, draft AppSettings) string {
+	if settingsChangeKind(applied, draft) != settingsChangeNone {
+		return text.settingsListHelpPending
+	}
+	return text.settingsListHelp
 }
 
 // renderSettingsWidget draws the settings panel and returns hit zones relative to the
@@ -235,152 +319,99 @@ func renderSettingsWidget(s AppSettings, languages []string, ctrl settingsContro
 	if !focused {
 		return renderSettingsSummaryBar(s)
 	}
-	return renderSettingsModal(s, languages, ctrl)
+	body, hits := renderSettingsView(s, languages, ctrl, 0)
+	return panelStyle.BorderForeground(lipgloss.Color("205")).Render(body), offsetHitZonesColumn(hits, 1, 1, 0)
 }
 
-func settingsListLines(text uiText, ctrl settingsController, lineBase int) ([]string, []hitZone) {
+func settingsOptionGroups(text uiText, ctrl settingsController, languages []string, lineBase, innerW int) ([]string, []hitZone) {
 	var lines []string
 	var hits []hitZone
+	y := lineBase
+
 	for field := 0; field < settingFieldCount; field++ {
-		label := settingsFieldLabel(text, field)
-		value := settingsFieldValue(text, field, ctrl.draft)
-		row := fmt.Sprintf("%s · %s", label, value)
-		if field == ctrl.field {
-			lines = append(lines, "▸ "+activeStyle.Render(row))
-		} else {
-			lines = append(lines, "  "+labelStyle.Render(row))
+		lines = append(lines, renderWrapped(labelStyle, innerW, settingsFieldLabel(text, field)))
+		y++
+
+		options := buildFieldOptions(text, field, ctrl.draft, languages)
+		selected := currentPickIndex(field, ctrl.draft, languages)
+		for i, opt := range options {
+			focused := !ctrl.focusOnAction && field == ctrl.focusField && i == ctrl.focusOption
+			lines = append(lines, settingsOptionLine(i == selected, focused, innerW, opt))
+			hits = append(hits, hitZone{
+				y0: y, y1: y, x0: 0, x1: -1,
+				kind: hitSettingsPick, index: i, extra: field,
+			})
+			y++
 		}
-		y := lineBase + field
-		hits = append(hits, fullRow(y, y, hitSettingsField, field))
+		lines = append(lines, "")
+		y++
 	}
 	return lines, hits
 }
 
-func settingsPickerLines(text uiText, ctrl settingsController, languages []string, lineBase int) ([]string, []hitZone) {
+func settingsActionLines(text uiText, ctrl settingsController, applied AppSettings, lineBase, innerW int) ([]string, []hitZone) {
+	if !ctrl.hasPendingChanges(applied) {
+		return nil, nil
+	}
 	var lines []string
 	var hits []hitZone
-	lines = append(lines, labelStyle.Render(settingsFieldLabel(text, ctrl.field)))
+	y := lineBase
+	lines = append(lines, "")
+	y++
 
-	var options []string
-	switch ctrl.field {
-	case settingFieldLanguage:
-		for _, lang := range languages {
-			options = append(options, languageOptionLabel(lang))
-		}
-	case settingFieldPhrases:
-		_, blockSize := profileMetrics(ctrl.draft.Language)
-		preventAdjacent := !ctrl.draft.AllowAdjacentRepeats
-		for _, count := range commonPhraseCounts {
-			passLen := phrasePasswordLength(count, blockSize)
-			bits := phraseEntropyBits(ctrl.draft.Language, count, preventAdjacent)
-			summary := fmt.Sprintf(text.phraseOptionSummary, count, passLen, math.Round(bits))
-			options = append(options, summary+" — "+phraseUseCase(text, count))
-		}
-	case settingFieldNoAdjacent, settingFieldAllowRepeat:
-		options = []string{boolWord(text, true), boolWord(text, false)}
-	}
-	for i, line := range options {
-		lines = append(lines, pickerLine(i == ctrl.pickIndex, line))
-		y := lineBase + 1 + i
-		hits = append(hits, fullRow(y, y, hitSettingsPick, i))
-	}
-	return lines, hits
-}
-
-func pickerLine(active bool, line string) string {
-	if active {
-		return "  ► " + activeStyle.Render(line)
-	}
-	return "    " + labelStyle.Render(line)
-}
-
-func settingsConfirmLines(text uiText, ctrl settingsController, kind, lineBase int) ([]string, []hitZone) {
-	var lines []string
-	var hits []hitZone
-	lines = append(lines, titleStyle.Render(text.settingsConfirmTitle))
-	optBase := lineBase + 1
-	if msg := renderSettingsPendingWarning(ctrl.draft.Language, kind); msg != "" {
-		lines = append(lines, msg)
-		optBase++
-	}
-	options := []string{text.settingsConfirmApply, text.settingsConfirmDiscard}
-	for i, line := range options {
-		lines = append(lines, pickerLine(i == ctrl.confirmIndex, line))
-		y := optBase + i
+	actions := []string{text.settingsConfirmApply, text.settingsConfirmDiscard}
+	for i, label := range actions {
+		focused := ctrl.focusOnAction && ctrl.focusAction == i
+		lines = append(lines, settingsActionLine(focused, innerW, label))
 		hits = append(hits, fullRow(y, y, hitSettingsConfirm, i))
+		y++
 	}
 	return lines, hits
 }
 
-func (c *settingsController) openConfirm() {
-	c.state = settingsUIConfirm
-	c.confirmIndex = 0
+func settingsOptionLine(selected, focused bool, innerW int, label string) string {
+	prefix := "  "
+	if focused {
+		prefix = "> "
+	}
+	line := prefix + selectionBox(selected) + " " + label
+	if focused {
+		return renderWrapped(activeStyle, innerW, line)
+	}
+	return renderWrapped(labelStyle, innerW, line)
+}
+
+func settingsActionLine(focused bool, innerW int, label string) string {
+	prefix := "  "
+	if focused {
+		prefix = "> "
+	}
+	line := prefix + "[ ] " + label
+	if focused {
+		return renderWrapped(activeStyle, innerW, line)
+	}
+	return renderWrapped(labelStyle, innerW, line)
 }
 
 func handleSettingsKey(ctrl *settingsController, msg tea.KeyMsg, languages []string, applied AppSettings) settingsExit {
 	switch msg.String() {
 	case "esc":
-		switch ctrl.state {
-		case settingsUIPick:
-			ctrl.closePicker()
-		case settingsUIConfirm:
-			ctrl.state = settingsUIList
-		case settingsUIList:
-			if settingsChangeKind(applied, ctrl.draft) != settingsChangeNone {
-				ctrl.openConfirm()
-			} else {
-				return settingsExitUnfocus
-			}
-		}
-	case "q", "ctrl+c":
-		if ctrl.state == settingsUIList || ctrl.state == settingsUIConfirm {
-			return settingsExitUnfocus
-		}
-		return settingsExitQuitApp
+		return settingsExitUnfocus
 	case "j", "down":
-		switch ctrl.state {
-		case settingsUIPick:
-			ctrl.movePick(1, languages)
-		case settingsUIConfirm:
-			ctrl.confirmIndex = 1
-		default:
-			ctrl.moveField(1)
-		}
+		ctrl.moveFocus(1, languages, applied)
 	case "k", "up":
-		switch ctrl.state {
-		case settingsUIPick:
-			ctrl.movePick(-1, languages)
-		case settingsUIConfirm:
-			ctrl.confirmIndex = 0
-		default:
-			ctrl.moveField(-1)
-		}
-	case "enter":
-		switch ctrl.state {
-		case settingsUIPick:
-			ctrl.confirmPick(languages)
-		case settingsUIConfirm:
-			if ctrl.confirmIndex == 0 {
+		ctrl.moveFocus(-1, languages, applied)
+	case " ", "enter":
+		if ctrl.focusOnAction && ctrl.hasPendingChanges(applied) {
+			if ctrl.focusAction == settingsActionApply {
 				return settingsExitApply
 			}
 			return settingsExitUnfocus
-		default:
-			ctrl.openPicker(languages)
 		}
-	case "y":
-		if ctrl.state == settingsUIConfirm {
-			return settingsExitApply
-		}
-	case "n":
-		if ctrl.state == settingsUIConfirm {
-			return settingsExitUnfocus
-		}
+		ctrl.selectFocused(languages)
 	default:
-		if ctrl.state == settingsUIList {
-			if field, ok := settingsFieldForKey(msg); ok {
-				ctrl.field = field
-				ctrl.openPicker(languages)
-			}
+		if field, ok := settingsFieldForKey(msg); ok {
+			ctrl.jumpToSection(field, languages)
 		}
 	}
 	return settingsExitNone

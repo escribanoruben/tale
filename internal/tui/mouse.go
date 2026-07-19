@@ -63,20 +63,14 @@ func (h *hitTargets) addXY(y, x0, x1 int, kind hitKind, index, extra int) {
 }
 
 func (h *hitTargets) addOffset(baseY int, zones []hitZone) {
+	h.addZones(offsetHitZonesColumn(zones, baseY, 0, 0))
+}
+
+func (h *hitTargets) addZones(zones []hitZone) {
 	if h == nil {
 		return
 	}
-	for _, z := range zones {
-		h.zones = append(h.zones, hitZone{
-			y0:    baseY + z.y0,
-			y1:    baseY + z.y1,
-			x0:    z.x0,
-			x1:    z.x1,
-			kind:  z.kind,
-			index: z.index,
-			extra: z.extra,
-		})
-	}
+	h.zones = append(h.zones, zones...)
 }
 
 // at returns the topmost hit zone containing (x, y). Later zones win.

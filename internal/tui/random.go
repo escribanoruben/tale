@@ -14,22 +14,16 @@ type uiMode int
 
 const (
 	modeNormal uiMode = iota
-	modePicker
 	modeRandomMenu
 	modeChangeLetter
-	modeSearch
 	modeHelp
 )
 
 func (s *Session) phraseOpts() phrase.Options {
-	return phrase.Options{AllowRepeat: s.AllowRepeat}
+	return phrase.Options{AllowRepeat: false}
 }
 
 func (s *Session) rebuildUsed() {
-	if s.AllowRepeat {
-		s.Used = make(map[string]bool)
-		return
-	}
 	used := make(map[string]bool)
 	for bi := range s.Selections {
 		for _, w := range s.Selections[bi] {
@@ -56,7 +50,6 @@ func (s *Session) randomizeScope(scope string) error {
 }
 
 func (s *Session) randomizeWord() error {
-	s.SearchQuery = ""
 	if err := s.refreshCandidates(); err != nil {
 		return err
 	}
@@ -73,7 +66,6 @@ func (s *Session) randomizeWord() error {
 }
 
 func (s *Session) randomizePhrase() error {
-	s.SearchQuery = ""
 	used := s.usedExceptBlock(s.BlockIndex)
 	words, err := phrase.Random(s.Profile, s.Blocks[s.BlockIndex], s.dict, used, s.phraseOpts())
 	if err != nil {
@@ -91,7 +83,6 @@ func (s *Session) randomizePhrase() error {
 }
 
 func (s *Session) randomizeAll() error {
-	s.SearchQuery = ""
 	results, err := phrase.RandomForPassword(s.Profile, s.Password, s.dict, s.phraseOpts())
 	if err != nil {
 		return err
@@ -108,9 +99,6 @@ func (s *Session) randomizeAll() error {
 }
 
 func (s *Session) usedExceptBlock(blockIndex int) map[string]bool {
-	if s.AllowRepeat {
-		return nil
-	}
 	used := make(map[string]bool)
 	for bi, sel := range s.Selections {
 		if bi == blockIndex {
@@ -126,7 +114,6 @@ func (s *Session) usedExceptBlock(blockIndex int) map[string]bool {
 }
 
 func (s *Session) changeLetter(letter rune) error {
-	s.SearchQuery = ""
 	if !strings.ContainsRune(s.Profile.Alphabet, letter) {
 		return fmt.Errorf("letter %q is not in the profile alphabet", letter)
 	}

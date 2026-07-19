@@ -16,7 +16,6 @@ const defaultPhrases = 5
 type Settings struct {
 	Language             string `toml:"language"`
 	Phrases              int    `toml:"phrases"`
-	AllowRepeat          bool   `toml:"allow_repeat"`
 	AllowAdjacentRepeats bool   `toml:"allow_adjacent_repeats"`
 }
 

@@ -17,14 +17,12 @@ func runTUI(args []string) {
 		Phrases:              cfg.Phrases,
 		Length:               cfg.Length,
 		Password:             cfg.Password,
-		AllowRepeat:          cfg.AllowRepeat,
 		AllowAdjacentRepeats: cfg.AllowAdjacentRepeats,
 		ForceSetup:           cfg.ForceSetup,
 		SaveSettings: func(s tui.AppSettings) error {
 			return persistRunConfig(runConfig{
 				Language:             s.Language,
 				Phrases:              s.Phrases,
-				AllowRepeat:          s.AllowRepeat,
 				AllowAdjacentRepeats: s.AllowAdjacentRepeats,
 			})
 		},

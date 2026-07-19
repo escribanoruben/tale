@@ -14,7 +14,6 @@ type runConfig struct {
 	Phrases              int
 	Length               int
 	Password             string
-	AllowRepeat          bool
 	AllowAdjacentRepeats bool
 	ForceSetup           bool
 }
@@ -30,7 +29,6 @@ func parseRunConfig(args []string, forTUI bool) runConfig {
 	language := fs.String("language", langDefault, "language code (en, es, or custom)")
 	phrases := fs.Int("phrases", base.PhrasesOr(5), "number of mnemonic phrases (blocks)")
 	length := fs.Int("length", 0, "password length (overrides --phrases)")
-	allowRepeat := fs.Bool("allow-repeat", base.AllowRepeat, "allow reusing words across the mnemonic")
 	allowAdjacent := fs.Bool("allow-adjacent-repeats", base.AllowAdjacentRepeats, "allow consecutive identical password characters")
 	password := fs.String("password", "", "existing password (TUI only, generated if empty)")
 	_ = fs.Parse(args)
@@ -47,7 +45,6 @@ func parseRunConfig(args []string, forTUI bool) runConfig {
 		Phrases:              *phrases,
 		Length:               *length,
 		Password:             *password,
-		AllowRepeat:          *allowRepeat,
 		AllowAdjacentRepeats: *allowAdjacent,
 	}
 	if forTUI && !languageFlag && !base.Configured() {
@@ -79,7 +76,6 @@ func persistRunConfig(cfg runConfig) error {
 	return settings.Save(settings.Settings{
 		Language:             cfg.Language,
 		Phrases:              cfg.Phrases,
-		AllowRepeat:          cfg.AllowRepeat,
 		AllowAdjacentRepeats: cfg.AllowAdjacentRepeats,
 	})
 }

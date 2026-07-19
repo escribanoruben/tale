@@ -19,7 +19,7 @@ func TestSessionRandomFill(t *testing.T) {
 	}
 
 	pass := "abcd" + "efgh" + "ilmn" + "oprs" + "tuvw"
-	s, err := NewSession(p, pass, dict, false, true)
+	s, err := NewSession(p, pass, dict, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +52,7 @@ func TestSessionNavigatePreservesWord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s, err := NewSession(p, "abcd", dict, false, true)
+	s, err := NewSession(p, "abcd", dict, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func TestMoveSlotCrossesPhrasesAndWraps(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s, err := NewSession(p, "abcdefgh", dict, false, true)
+	s, err := NewSession(p, "abcdefgh", dict, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,7 +134,7 @@ func TestSessionRandomizeWord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s, err := NewSession(p, "abcd", dict, false, true)
+	s, err := NewSession(p, "abcd", dict, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +161,7 @@ func TestSessionRandomizePhrase(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s, err := NewSession(p, "abcd", dict, false, true)
+	s, err := NewSession(p, "abcd", dict, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,7 +188,7 @@ func TestSessionChangeLetter(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s, err := NewSession(p, "abcd", dict, false, true)
+	s, err := NewSession(p, "abcd", dict, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,7 +224,7 @@ func TestSessionMoveBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s, err := NewSession(p, "abcd"+"efgh", dict, false, true)
+	s, err := NewSession(p, "abcd"+"efgh", dict, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -254,7 +254,7 @@ func TestSessionChangeWord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s, err := NewSession(p, "abcd", dict, false, true)
+	s, err := NewSession(p, "abcd", dict, true)
 	if err != nil {
 		t.Fatal(err)
 	}
