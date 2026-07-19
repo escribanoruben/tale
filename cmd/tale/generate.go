@@ -22,7 +22,7 @@ func runGenerate(args []string) {
 	}
 
 	opts := phrase.Options{
-		AllowRepeat:          cfg.AllowRepeat,
+		AllowRepeat:          false,
 		AllowAdjacentRepeats: cfg.AllowAdjacentRepeats,
 	}
 	pass, blocks, err := phrase.GeneratePassword(p, dict, opts)

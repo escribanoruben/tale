@@ -13,7 +13,6 @@ import (
 type AppSettings struct {
 	Language             string
 	Phrases              int
-	AllowRepeat          bool
 	AllowAdjacentRepeats bool
 }
 
@@ -23,7 +22,6 @@ type AppConfig struct {
 	Phrases              int
 	Length               int
 	Password             string
-	AllowRepeat          bool
 	AllowAdjacentRepeats bool
 	ForceSetup           bool
 	SaveSettings         func(AppSettings) error
@@ -62,7 +60,6 @@ func RunApp(cfg AppConfig) error {
 	settings := AppSettings{
 		Language:             cfg.Language,
 		Phrases:              cfg.Phrases,
-		AllowRepeat:          cfg.AllowRepeat,
 		AllowAdjacentRepeats: cfg.AllowAdjacentRepeats,
 	}
 	if settings.Phrases <= 0 {
@@ -134,9 +131,6 @@ func (m AppModel) updateSetup(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if !ok {
 		return m, nil
 	}
-	if keyMsg.String() == "q" || keyMsg.String() == "ctrl+c" {
-		return m, tea.Quit
-	}
 	if keyMsg.String() == "esc" {
 		return m, tea.Quit
 	}
@@ -191,13 +185,9 @@ func (m AppModel) handleSetupMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	}
 	switch zone.kind {
 	case hitSettingsField:
-		if m.setup.ctrl.state == settingsUIList {
-			m.setup.ctrl.field = zone.index
-			m.setup.ctrl.openPicker(m.languages)
-		}
+		m.setup.ctrl.jumpToSection(zone.index, m.languages)
 	case hitSettingsPick:
-		m.setup.ctrl.pickIndex = zone.index
-		m.setup.ctrl.confirmPick(m.languages)
+		m.setup.ctrl.selectOption(zone.extra, zone.index, m.languages)
 		m.settings.Language = m.setup.ctrl.draft.Language
 	}
 	return m, nil
@@ -216,9 +206,6 @@ func (m AppModel) updatePicker(msg tea.Msg) (tea.Model, tea.Cmd) {
 					field = zone.index
 				}
 				m.focusSettings(field)
-				if zone.kind == hitSettingsField {
-					m.picker.settingsCtrl.openPicker(m.languages)
-				}
 				return m, nil
 			}
 		}
@@ -267,26 +254,14 @@ func (m AppModel) handleSettingsMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	if !ok {
 		return m.handleSettingsKeys(tea.KeyMsg{Type: tea.KeyEsc})
 	}
-	if zone.kind == hitRoller || zone.kind == hitRollerPanel || zone.kind == hitBlock || zone.kind == hitSlot || zone.kind == hitOverlay || zone.kind == hitCurrentWord {
-		return m.handleSettingsKeys(tea.KeyMsg{Type: tea.KeyEsc})
-	}
 	switch zone.kind {
 	case hitSettingsField:
-		if m.picker.settingsCtrl.state == settingsUIList {
-			m.picker.settingsCtrl.field = zone.index
-			m.picker.settingsCtrl.openPicker(m.languages)
-		}
+		m.picker.settingsCtrl.jumpToSection(zone.index, m.languages)
 	case hitSettingsPick:
-		m.picker.settingsCtrl.pickIndex = zone.index
-		m.picker.settingsCtrl.confirmPick(m.languages)
+		m.picker.settingsCtrl.selectOption(zone.extra, zone.index, m.languages)
 	case hitSettingsConfirm:
-		m.picker.settingsCtrl.confirmIndex = zone.index
-		if zone.index == 0 {
-			return m.handleSettingsKeys(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("y")})
-		}
-		return m.handleSettingsKeys(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("n")})
-	case hitSettingsPanel:
-		// Click on chrome (title/help): ignore.
+		m.picker.settingsCtrl.focusActionRow(zone.index, m.languages, m.settings)
+		return m.handleSettingsKeys(tea.KeyMsg{Type: tea.KeySpace})
 	}
 	return m, nil
 }
@@ -364,7 +339,7 @@ func (m AppModel) newSession() (*Session, error) {
 			return nil, err
 		}
 	}
-	return NewSession(p, pass, dict, m.settings.AllowRepeat, !m.settings.AllowAdjacentRepeats)
+	return NewSession(p, pass, dict, !m.settings.AllowAdjacentRepeats)
 }
 
 func applyPasswordLength(p *profile.Profile, length int) error {
@@ -390,7 +365,7 @@ func isSettingsFocusKey(msg tea.KeyMsg) bool {
 	case tea.KeyTab:
 		return true
 	default:
-		return msg.String() == "tab" || msg.String() == "o"
+		return msg.String() == "tab"
 	}
 }
 
@@ -405,8 +380,6 @@ func settingsFieldForKey(msg tea.KeyMsg) (int, bool) {
 		return settingFieldNoAdjacent, true
 	case '3':
 		return settingFieldPhrases, true
-	case '4':
-		return settingFieldAllowRepeat, true
 	default:
 		return 0, false
 	}
@@ -415,8 +388,8 @@ func settingsFieldForKey(msg tea.KeyMsg) (int, bool) {
 func (m *AppModel) focusSettings(field int) {
 	m.picker.settingsFocus = true
 	m.picker.settingsCtrl = newSettingsController(m.settings)
-	m.picker.settingsCtrl.field = field
-	m.picker.settingsCtrl.state = settingsUIList
+	m.picker.settingsCtrl.syncFocusFromDraft(m.languages)
+	m.picker.settingsCtrl.jumpToSection(field, m.languages)
 	m.picker.session.Err = nil
 }
 

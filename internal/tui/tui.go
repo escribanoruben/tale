@@ -37,13 +37,11 @@ type Session struct {
 	Blocks                 []string
 	Selections             [][]string
 	Used                   map[string]bool
-	AllowRepeat            bool
 	PreventAdjacentRepeats bool
 	BlockIndex             int
 	SlotIndex              int
 	Candidates             []string
 	RollerIndex            int
-	SearchQuery            string
 	Done                   bool
 	Quitting               bool
 	Err                    error
@@ -51,7 +49,7 @@ type Session struct {
 }
 
 // NewSession builds a TUI session for the given profile and password.
-func NewSession(p profile.Profile, password string, dict *dictionary.Dictionary, allowRepeat bool, preventAdjacentRepeats bool) (*Session, error) {
+func NewSession(p profile.Profile, password string, dict *dictionary.Dictionary, preventAdjacentRepeats bool) (*Session, error) {
 	blocks, err := splitBlocks(password, p.BlockSize)
 	if err != nil {
 		return nil, err
@@ -65,7 +63,6 @@ func NewSession(p profile.Profile, password string, dict *dictionary.Dictionary,
 		Blocks:                 blocks,
 		Selections:             make([][]string, len(blocks)),
 		Used:                   make(map[string]bool),
-		AllowRepeat:            allowRepeat,
 		PreventAdjacentRepeats: preventAdjacentRepeats,
 		dict:                   dict,
 	}
@@ -83,16 +80,14 @@ func NewSession(p profile.Profile, password string, dict *dictionary.Dictionary,
 }
 
 func (s *Session) randomFill() error {
-	results, err := phrase.RandomForPassword(s.Profile, s.Password, s.dict, phrase.Options{AllowRepeat: s.AllowRepeat})
+	results, err := phrase.RandomForPassword(s.Profile, s.Password, s.dict, phrase.Options{AllowRepeat: false})
 	if err != nil {
 		return err
 	}
 	for i, r := range results {
 		copy(s.Selections[i], r.Words)
-		if !s.AllowRepeat {
-			for _, w := range r.Words {
-				s.Used[normalize.Key(w)] = true
-			}
+		for _, w := range r.Words {
+			s.Used[normalize.Key(w)] = true
 		}
 	}
 	return nil
@@ -117,9 +112,6 @@ func (s *Session) usedExceptCurrent() map[string]bool {
 }
 
 func (s *Session) usedExceptSlot(blockIndex, slotIndex int) map[string]bool {
-	if s.AllowRepeat {
-		return nil
-	}
 	out := make(map[string]bool)
 	for bi, sel := range s.Selections {
 		for si, w := range sel {
@@ -145,9 +137,7 @@ func (s *Session) refreshCandidates() error {
 	if err != nil {
 		return err
 	}
-	if !s.AllowRepeat {
-		words = dictionary.FilterAvailable(words, s.usedExceptCurrent())
-	}
+	words = dictionary.FilterAvailable(words, s.usedExceptCurrent())
 	s.Candidates = words
 	if len(s.Candidates) == 0 {
 		s.RollerIndex = 0
@@ -175,34 +165,19 @@ func (s *Session) totalSlots() int {
 	return len(s.Blocks) * len(s.Profile.PhraseTemplate)
 }
 
-func (s *Session) visibleCandidates() []string {
-	if s.SearchQuery == "" {
-		return s.Candidates
-	}
-	q := strings.ToLower(s.SearchQuery)
-	out := make([]string, 0)
-	for _, w := range s.Candidates {
-		if strings.HasPrefix(strings.ToLower(w), q) {
-			out = append(out, w)
-		}
-	}
-	return out
-}
-
 func (s *Session) syncRollerToVisible() {
-	visible := s.visibleCandidates()
-	if len(visible) == 0 {
+	if len(s.Candidates) == 0 {
 		s.RollerIndex = 0
 		return
 	}
-	if s.RollerIndex >= len(visible) {
-		s.RollerIndex = len(visible) - 1
+	if s.RollerIndex >= len(s.Candidates) {
+		s.RollerIndex = len(s.Candidates) - 1
 	}
 	current := s.Selections[s.BlockIndex][s.SlotIndex]
 	if current == "" {
 		return
 	}
-	for i, w := range visible {
+	for i, w := range s.Candidates {
 		if normalize.Key(w) == normalize.Key(current) {
 			s.RollerIndex = i
 			return
@@ -215,50 +190,39 @@ func (s *Session) syncRollerToSelection() {
 }
 
 func (s *Session) applySelection() {
-	visible := s.visibleCandidates()
-	if len(visible) == 0 {
+	if len(s.Candidates) == 0 {
 		return
 	}
-	word := visible[s.RollerIndex]
+	word := s.Candidates[s.RollerIndex]
 	old := s.Selections[s.BlockIndex][s.SlotIndex]
-	if old != "" && !s.AllowRepeat {
+	if old != "" {
 		delete(s.Used, normalize.Key(old))
 	}
 	s.Selections[s.BlockIndex][s.SlotIndex] = word
-	if !s.AllowRepeat {
-		s.Used[normalize.Key(word)] = true
-	}
+	s.Used[normalize.Key(word)] = true
 }
 
 func (s *Session) previewRoller(delta int) {
-	visible := s.visibleCandidates()
-	if len(visible) == 0 {
+	if len(s.Candidates) == 0 {
 		return
 	}
-	s.RollerIndex = (s.RollerIndex + delta + len(visible)) % len(visible)
+	s.RollerIndex = (s.RollerIndex + delta + len(s.Candidates)) % len(s.Candidates)
+}
+
+// cycleWord moves to the next/previous candidate and applies it immediately.
+func (s *Session) cycleWord(delta int) {
+	s.previewRoller(delta)
+	s.applySelection()
 }
 
 func (s *Session) setRollerOffset(offset int) {
-	visible := s.visibleCandidates()
-	if len(visible) == 0 {
+	if len(s.Candidates) == 0 {
 		return
 	}
-	s.RollerIndex = (s.RollerIndex + offset + len(visible)) % len(visible)
-}
-
-func (s *Session) restoreWord(word string) {
-	old := s.Selections[s.BlockIndex][s.SlotIndex]
-	if old != "" && !s.AllowRepeat {
-		delete(s.Used, normalize.Key(old))
-	}
-	s.Selections[s.BlockIndex][s.SlotIndex] = word
-	if word != "" && !s.AllowRepeat {
-		s.Used[normalize.Key(word)] = true
-	}
+	s.RollerIndex = (s.RollerIndex + offset + len(s.Candidates)) % len(s.Candidates)
 }
 
 func (s *Session) moveSlotInBlock(delta int) error {
-	s.SearchQuery = ""
 	n := len(s.Profile.PhraseTemplate)
 	if n == 0 || len(s.Blocks) == 0 {
 		return nil
@@ -284,7 +248,6 @@ func (s *Session) moveBlock(delta int) error {
 	if len(s.Blocks) == 0 {
 		return nil
 	}
-	s.SearchQuery = ""
 	s.BlockIndex = (s.BlockIndex + delta + len(s.Blocks)) % len(s.Blocks)
 	if err := s.refreshCandidates(); err != nil {
 		return err
@@ -305,7 +268,6 @@ func (s *Session) jumpToSlot(blockIndex, slotIndex int) error {
 	if slotIndex < 0 || slotIndex >= n {
 		return nil
 	}
-	s.SearchQuery = ""
 	s.BlockIndex = blockIndex
 	s.SlotIndex = slotIndex
 	if err := s.refreshCandidates(); err != nil {
@@ -324,7 +286,7 @@ type Model struct {
 	languages      []string
 	keys           keyMap
 	mode           uiMode
-	pickerSnapshot string
+	width          int
 	click          clickTracker
 	hits           *hitTargets
 }
@@ -335,7 +297,6 @@ type keyMap struct {
 	BlockPrev key.Binding
 	BlockNext key.Binding
 	Enter     key.Binding
-	Quit      key.Binding
 }
 
 func defaultKeyMap() keyMap {
@@ -358,11 +319,7 @@ func defaultKeyMap() keyMap {
 		),
 		Enter: key.NewBinding(
 			key.WithKeys("enter"),
-			key.WithHelp("enter", "change word"),
-		),
-		Quit: key.NewBinding(
-			key.WithKeys("q", "ctrl+c"),
-			key.WithHelp("q", "quit"),
+			key.WithHelp("enter", "show result"),
 		),
 	}
 }
@@ -393,108 +350,44 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.mode == modeChangeLetter {
 			return m.handleChangeLetter(msg)
 		}
-		if m.mode == modePicker {
-			return m.handlePicker(msg)
-		}
-		if m.mode == modeSearch {
-			return m.handleSearch(msg)
+		if handled, quit := m.handlePhraseKeys(msg); handled {
+			if quit {
+				return m, tea.Quit
+			}
+			return m, nil
 		}
 
 		switch {
-		case key.Matches(msg, m.keys.Quit):
-			m.session.Quitting = true
-			return m, tea.Quit
 		case msg.Type == tea.KeyEsc:
 			m.session.Quitting = true
 			return m, tea.Quit
-		case msg.String() == "g":
-			m.session.Done = true
-			return m, tea.Quit
+		case msg.String() == "?":
+			m.mode = modeHelp
+			m.session.Err = nil
 		case msg.String() == "r":
 			m.mode = modeRandomMenu
 			m.session.Err = nil
 		case msg.String() == "c":
 			m.mode = modeChangeLetter
 			m.session.Err = nil
-		case msg.Type == tea.KeyF1:
-			m.mode = modeHelp
-			m.session.Err = nil
-		case key.Matches(msg, m.keys.SlotNext):
-			if err := m.session.moveSlotInBlock(1); err != nil {
-				m.session.Err = err
-			}
-		case key.Matches(msg, m.keys.SlotPrev):
-			if err := m.session.moveSlotInBlock(-1); err != nil {
-				m.session.Err = err
-			}
-		case key.Matches(msg, m.keys.BlockNext):
-			if err := m.session.moveBlock(1); err != nil {
-				m.session.Err = err
-			}
-		case key.Matches(msg, m.keys.BlockPrev):
-			if err := m.session.moveBlock(-1); err != nil {
-				m.session.Err = err
-			}
-		case key.Matches(msg, m.keys.Enter):
-			m.beginPicker()
 		}
 	case tea.MouseMsg:
 		return m.handleMouse(msg)
 	case tea.WindowSizeMsg:
-		_ = msg
+		m.width = msg.Width
 	}
 	return m, nil
-}
-
-func (m *Model) beginPicker() {
-	if len(m.session.visibleCandidates()) == 0 {
-		return
-	}
-	m.pickerSnapshot = m.session.Selections[m.session.BlockIndex][m.session.SlotIndex]
-	m.session.syncRollerToSelection()
-	m.mode = modePicker
-	m.session.Err = nil
-}
-
-func (m *Model) beginSearch() {
-	if m.mode != modePicker {
-		return
-	}
-	m.pickerSnapshot = m.session.Selections[m.session.BlockIndex][m.session.SlotIndex]
-	m.mode = modeSearch
-	m.session.SearchQuery = ""
-	m.session.syncRollerToSelection()
-	m.session.Err = nil
-}
-
-func (m *Model) confirmPicker() {
-	m.session.applySelection()
-	m.mode = modeNormal
-	m.session.Err = nil
-}
-
-func (m *Model) cancelPicker() {
-	m.session.restoreWord(m.pickerSnapshot)
-	m.session.SearchQuery = ""
-	m.session.syncRollerToSelection()
-	m.mode = modeNormal
-	m.session.Err = nil
 }
 
 func (m Model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	if m.mode == modeHelp {
 		return m.handleHelpMouse(msg)
 	}
-	if m.rollerOpen() {
-		return m.handleRollerMouse(msg)
-	}
 	now := time.Now()
 	if d := wheelDelta(msg); d != 0 {
-		if m.mode == modeNormal {
-			zone, ok := m.hits.at(msg.X, msg.Y)
-			if ok {
-				m.wheelOpenPicker(zone, d)
-			}
+		zone, ok := m.hits.at(msg.X, msg.Y)
+		if ok {
+			m.wheelCycleWord(zone, d)
 		}
 		return m, nil
 	}
@@ -512,29 +405,17 @@ func (m Model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	double := m.click.note(zone, true, now)
 	switch zone.kind {
 	case hitSlot:
-		if m.mode == modeNormal {
-			if double {
-				m.openPickerAt(zone.index, zone.extra)
-			} else if err := m.session.jumpToSlot(zone.index, zone.extra); err != nil {
-				m.session.Err = err
-			}
+		if err := m.session.jumpToSlot(zone.index, zone.extra); err != nil {
+			m.session.Err = err
 		}
 	case hitBlock:
-		if m.mode == modeNormal {
-			if double {
-				if err := m.session.jumpToBlock(zone.index); err != nil {
-					m.session.Err = err
-				} else {
-					m.beginPicker()
-				}
-			} else if err := m.session.jumpToBlock(zone.index); err != nil {
-				m.session.Err = err
-			}
+		if err := m.session.jumpToBlock(zone.index); err != nil {
+			m.session.Err = err
 		}
-	case hitCurrentWord:
-		if m.mode == modeNormal && double {
-			m.beginPicker()
-		}
+	case hitRoller:
+		m.session.setRollerOffset(zone.index)
+		m.session.applySelection()
+		_ = double
 	case hitOverlay:
 		if m.mode == modeRandomMenu {
 			return m.clickRandomOverlay(zone.index)
@@ -543,35 +424,7 @@ func (m Model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) handleRollerMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
-	now := time.Now()
-	if d := wheelDelta(msg); d != 0 {
-		zone, ok := m.hits.at(msg.X, msg.Y)
-		if ok && zone.kind == hitRoller {
-			m.session.previewRoller(d)
-		}
-		return m, nil
-	}
-	if msg.Action != tea.MouseActionPress || !isLeftClick(msg) {
-		return m, nil
-	}
-	zone, ok := m.hits.at(msg.X, msg.Y)
-	if !ok {
-		m.cancelPicker()
-		return m, nil
-	}
-	if zone.kind != hitRoller {
-		return m, nil
-	}
-	double := m.click.note(zone, true, now)
-	m.session.setRollerOffset(zone.index)
-	if double {
-		m.confirmPicker()
-	}
-	return m, nil
-}
-
-func (m *Model) wheelOpenPicker(zone hitZone, delta int) {
+func (m *Model) wheelCycleWord(zone hitZone, delta int) {
 	switch zone.kind {
 	case hitSlot:
 		if err := m.session.jumpToSlot(zone.index, zone.extra); err != nil {
@@ -583,21 +436,13 @@ func (m *Model) wheelOpenPicker(zone hitZone, delta int) {
 			m.session.Err = err
 			return
 		}
-	case hitCurrentWord:
-		// already on the active slot
+	case hitRoller:
+		m.session.cycleWord(delta)
+		return
 	default:
 		return
 	}
-	m.beginPicker()
-	m.session.previewRoller(delta)
-}
-
-func (m *Model) openPickerAt(blockIndex, slotIndex int) {
-	if err := m.session.jumpToSlot(blockIndex, slotIndex); err != nil {
-		m.session.Err = err
-		return
-	}
-	m.beginPicker()
+	m.session.cycleWord(delta)
 }
 
 func (m Model) clickRandomOverlay(index int) (tea.Model, tea.Cmd) {
@@ -614,54 +459,40 @@ func (m Model) clickRandomOverlay(index int) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) handlePicker(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m *Model) handlePhraseKeys(msg tea.KeyMsg) (handled bool, quit bool) {
 	switch {
-	case key.Matches(msg, m.keys.Quit):
-		m.session.Quitting = true
-		return m, tea.Quit
-	case msg.Type == tea.KeyEsc:
-		m.cancelPicker()
 	case key.Matches(msg, m.keys.Enter):
-		m.confirmPicker()
-	case msg.String() == "/":
-		m.beginSearch()
-	case key.Matches(msg, m.keys.BlockNext):
-		m.session.previewRoller(1)
-	case key.Matches(msg, m.keys.BlockPrev):
-		m.session.previewRoller(-1)
-	}
-	return m, nil
-}
-
-func (m Model) handleSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch {
-	case key.Matches(msg, m.keys.Quit):
-		m.session.Quitting = true
-		return m, tea.Quit
-	case msg.Type == tea.KeyEsc:
-		m.cancelPicker()
-	case key.Matches(msg, m.keys.Enter):
-		m.confirmPicker()
-	case key.Matches(msg, m.keys.BlockNext):
-		m.session.previewRoller(1)
-	case key.Matches(msg, m.keys.BlockPrev):
-		m.session.previewRoller(-1)
-	case msg.Type == tea.KeyBackspace:
-		if len(m.session.SearchQuery) > 0 {
-			m.session.SearchQuery = m.session.SearchQuery[:len(m.session.SearchQuery)-1]
-			m.session.RollerIndex = 0
-			m.session.syncRollerToSelection()
+		m.session.Done = true
+		return true, true
+	case msg.String() == "n":
+		m.session.cycleWord(1)
+		return true, false
+	case msg.String() == "p":
+		m.session.cycleWord(-1)
+		return true, false
+	case key.Matches(msg, m.keys.SlotNext):
+		if err := m.session.moveSlotInBlock(1); err != nil {
+			m.session.Err = err
 		}
-	case msg.Type == tea.KeySpace:
-		m.session.SearchQuery += " "
-		m.session.RollerIndex = 0
-		m.session.syncRollerToSelection()
-	case msg.Type == tea.KeyRunes:
-		m.session.SearchQuery += string(msg.Runes)
-		m.session.RollerIndex = 0
-		m.session.syncRollerToSelection()
+		return true, false
+	case key.Matches(msg, m.keys.SlotPrev):
+		if err := m.session.moveSlotInBlock(-1); err != nil {
+			m.session.Err = err
+		}
+		return true, false
+	case key.Matches(msg, m.keys.BlockNext):
+		if err := m.session.moveBlock(1); err != nil {
+			m.session.Err = err
+		}
+		return true, false
+	case key.Matches(msg, m.keys.BlockPrev):
+		if err := m.session.moveBlock(-1); err != nil {
+			m.session.Err = err
+		}
+		return true, false
+	default:
+		return false, false
 	}
-	return m, nil
 }
 
 func (m Model) handleRandomMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -678,19 +509,13 @@ func (m Model) handleRandomMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "esc":
 		m.mode = modeNormal
 		m.session.Err = nil
-	case "q", "ctrl+c":
-		m.session.Quitting = true
-		return m, tea.Quit
 	}
 	return m, nil
 }
 
 func (m Model) handleHelp(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch {
-	case key.Matches(msg, m.keys.Quit):
-		m.session.Quitting = true
-		return m, tea.Quit
-	case msg.Type == tea.KeyEsc, key.Matches(msg, m.keys.Enter), msg.Type == tea.KeyF1:
+	case msg.Type == tea.KeyEsc, key.Matches(msg, m.keys.Enter), msg.String() == "?":
 		m.mode = modeNormal
 		m.session.Err = nil
 	}
@@ -710,9 +535,6 @@ func (m Model) handleChangeLetter(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case msg.String() == "esc":
 		m.mode = modeNormal
 		m.session.Err = nil
-	case msg.String() == "q", msg.String() == "ctrl+c":
-		m.session.Quitting = true
-		return m, tea.Quit
 	case msg.Type == tea.KeyRunes && len(msg.Runes) == 1:
 		letter := msg.Runes[0]
 		if letter >= 'A' && letter <= 'Z' {
@@ -745,128 +567,91 @@ func (m Model) View() string {
 	var b strings.Builder
 
 	if m.settingsFocus {
-		b.WriteString(renderSettingsBar(m.settings))
-		b.WriteString("\n\n")
-		modal, modalHits := renderSettingsModal(m.settings, m.languages, m.settingsCtrl)
+		view, hits := renderSettingsView(m.settings, m.languages, m.settingsCtrl, m.width)
+		b.WriteString(view)
 		if m.hits != nil {
-			m.hits.addOffset(viewLineY(&b), modalHits)
+			m.hits.addZones(hits)
 		}
-		b.WriteString(modal)
-		b.WriteString("\n\n")
-		b.WriteString(dimLines(m.buildPickerBody(text, false, 0)))
+	} else if m.mode == modeHelp {
+		b.WriteString(renderHelpView(text, m.width))
 	} else {
+		hitBase := viewLineY(&b)
+		b.WriteString(m.buildPickerBody(text, true, hitBase))
+
+		b.WriteString("\n")
 		bar, barHits := renderSettingsSummaryBar(m.settings)
-		if m.hits != nil {
-			m.hits.addOffset(viewLineY(&b), barHits)
-		}
+		barY := viewLineY(&b)
 		b.WriteString(bar)
-		b.WriteString("\n\n")
-		if m.mode == modeHelp {
-			b.WriteString(renderHelpModal(text))
-		} else if m.rollerOpen() {
-			rollerModal, rollerHits := renderRollerModal(s, m.mode, text)
-			if m.hits != nil {
-				m.hits.addOffset(viewLineY(&b), rollerHits)
-			}
-			b.WriteString(rollerModal)
-			b.WriteString("\n\n")
-			b.WriteString(dimLines(m.buildPickerBody(text, false, 0)))
-		} else {
-			hitBase := viewLineY(&b)
-			b.WriteString(m.buildPickerBody(text, true, hitBase))
+		if m.hits != nil {
+			m.hits.addOffset(barY, barHits)
 		}
 	}
 
 	if s.Err != nil {
 		b.WriteString("\n")
-		if m.settingsFocus {
-			b.WriteString(dimLines(warnStyle.Render(s.Err.Error())))
-		} else {
-			b.WriteString(warnStyle.Render(s.Err.Error()))
-		}
+		b.WriteString(warnStyle.Render(s.Err.Error()))
 	}
 	return b.String()
 }
 
-func dimLines(s string) string {
-	if s == "" {
-		return ""
-	}
-	lines := strings.Split(s, "\n")
-	for i, line := range lines {
-		if strings.TrimSpace(line) != "" {
-			lines[i] = dimStyle.Render(line)
-		}
-	}
-	return strings.Join(lines, "\n")
+func (m Model) buildPickerChrome(text uiText) string {
+	s := m.session
+	passPanel := renderPasswordPanel(text.password, renderPasswordHighlight(s.Password, s.flatIndex(), s.Profile.BlockSize))
+	entropyLine := helpStyle.Render(fmt.Sprintf("%s: %s", text.entropy, s.entropyLabel()))
+
+	var b strings.Builder
+	b.WriteString(renderAppHeader(text))
+	b.WriteString("\n")
+	b.WriteString(joinPasswordRow(m.width, passPanel, entropyLine))
+	return b.String()
 }
 
 func (m Model) buildPickerBody(text uiText, registerHits bool, hitBase int) string {
 	s := m.session
 	var b strings.Builder
 
-	b.WriteString(appTitleStyle.Render(text.title))
-	b.WriteString("\n\n")
-
-	passPanel := renderPasswordPanel(text.password, renderPasswordHighlight(s.Password, s.flatIndex(), s.Profile.BlockSize))
-	b.WriteString(passPanel)
-
+	b.WriteString(m.buildPickerChrome(text))
 	b.WriteString("\n")
-	b.WriteString(fmt.Sprintf("%s: %s\n", text.entropy, s.entropyLabel()))
-	b.WriteString(fmt.Sprintf(text.step+"\n", s.flatIndex()+1, s.totalSlots()))
-	b.WriteString(fmt.Sprintf("%s · %s «%s» · %s\n\n",
-		fmt.Sprintf(text.block, s.BlockIndex+1, len(s.Blocks)),
-		text.letter,
-		s.requiredLetter(),
-		labelStyle.Render(posLabel(s.Profile.Language, s.currentPOSLabel())),
-	))
 
-	visible := s.visibleCandidates()
-	if len(visible) == 0 {
-		b.WriteString(warnStyle.Render(text.noWords))
+	rowStart := hitBase + viewLineY(&b)
+	rollerPanel, rollerHits := renderRollerPanel(s, text)
+	progressWide, progHitsWide := renderProgress(s, rowStart)
+
+	if fitsSideBySide(m.width, rollerPanel, progressWide) {
+		combined, rollerWidth, gapWidth, rollerYOff, phrasesYOff := joinSideBySide(rollerPanel, progressWide)
+		b.WriteString(combined)
+		if registerHits && m.hits != nil {
+			m.hits.addZones(offsetHitZonesColumn(rollerHits, rowStart+rollerYOff, 0, rollerWidth))
+			phrasesWidth := lipgloss.Width(progressWide)
+			m.hits.addZones(offsetHitZonesColumn(progHitsWide, rowStart+phrasesYOff, rollerWidth+gapWidth, phrasesWidth))
+		}
+	} else {
+		b.WriteString(rollerPanel)
+		b.WriteString("\n\n")
+		phrasesStart := hitBase + viewLineY(&b)
+		progress, progHits := renderProgress(s, phrasesStart)
+		b.WriteString(progress)
+		if registerHits && m.hits != nil {
+			m.hits.addOffset(rowStart, rollerHits)
+			m.hits.addZones(progHits)
+		}
+	}
+
+	m.appendPickerFooter(&b, text, registerHits, hitBase)
+	return b.String()
+}
+
+func (m Model) appendPickerFooter(b *strings.Builder, text uiText, registerHits bool, hitBase int) {
+	s := m.session
+
+	if len(s.Candidates) == 0 {
 		b.WriteString("\n")
 		b.WriteString(warnStyle.Render(text.noWordsHint))
-	} else {
-		word := s.Selections[s.BlockIndex][s.SlotIndex]
-		p := blockPaletteFor(s.BlockIndex)
-		marker := blockTextStyle(p, true).Render("▸")
-		wordLineY := hitBase + viewLineY(&b)
-		b.WriteString(fmt.Sprintf("%s  %s %s\n",
-			labelStyle.Render(text.currentWord+":"),
-			marker,
-			blockSlotStyle(p).Render(word),
-		))
-		if registerHits && m.hits != nil {
-			m.hits.add(wordLineY, wordLineY, hitCurrentWord, 0)
-		}
-		b.WriteString(helpStyle.Render(text.pickerHint))
-	}
-
-	b.WriteString("\n\n")
-
-	progStart := hitBase + viewLineY(&b)
-	progress, progHits := renderProgress(s, progStart)
-	b.WriteString(progress)
-	if registerHits && m.hits != nil {
-		for _, z := range progHits {
-			m.hits.zones = append(m.hits.zones, z)
-		}
-	}
-
-	b.WriteString("\n\n")
-	if !s.AllowRepeat {
-		b.WriteString(helpStyle.Render(text.uniqueOn))
-	} else {
-		b.WriteString(helpStyle.Render(text.uniqueOff))
-	}
-	b.WriteString("\n")
-	if !m.settingsFocus && !m.rollerOpen() && m.mode != modeHelp {
-		b.WriteString(helpStyle.Render(text.help))
 	}
 
 	if m.mode == modeRandomMenu {
 		b.WriteString("\n\n")
-		overlayStart := hitBase + viewLineY(&b)
+		overlayStart := hitBase + viewLineY(b)
 		overlay := renderOverlay(text.randomTitle, []string{text.randomWord, text.randomPhrase, text.randomAll, text.randomCancel})
 		b.WriteString(overlay)
 		if registerHits && m.hits != nil {
@@ -880,8 +665,6 @@ func (m Model) buildPickerBody(text uiText, registerHits bool, hitBase int) stri
 		b.WriteString("\n\n")
 		b.WriteString(renderOverlay(text.changeLetter, []string{text.changeCancel}))
 	}
-
-	return b.String()
 }
 
 func (s *Session) entropyLabel() string {
@@ -889,7 +672,7 @@ func (s *Session) entropyLabel() string {
 	opts := password.Options{PreventAdjacentRepeats: s.PreventAdjacentRepeats}
 	bits := password.EntropyBits(len(s.Profile.Alphabet), len(s.Password), opts)
 	if opts.PreventAdjacentRepeats && len(s.Password) > 1 && len(s.Profile.Alphabet) >= 2 {
-		return fmt.Sprintf(text.entropyAdjacent, bits)
+		return fmt.Sprintf("~%.1f %s", bits, text.entropyBitsUnit)
 	}
 	return fmt.Sprintf(text.entropyFormula, bits, len(s.Password), len(s.Profile.Alphabet))
 }
@@ -1035,7 +818,6 @@ func Run(session *Session) error {
 	settings := AppSettings{
 		Language:             session.Profile.Language,
 		Phrases:              len(session.Blocks),
-		AllowRepeat:          session.AllowRepeat,
 		AllowAdjacentRepeats: !session.PreventAdjacentRepeats,
 	}
 	m := NewModel(session, settings, []string{session.Profile.Language})

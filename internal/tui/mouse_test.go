@@ -19,7 +19,7 @@ func testSession(t *testing.T) *Session {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s, err := NewSession(p, "abcd", dict, true, true)
+	s, err := NewSession(p, "abcd", dict, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,9 +64,10 @@ func TestWheelDelta(t *testing.T) {
 	}
 }
 
-func TestHandleMouseWheelOpensPicker(t *testing.T) {
+func TestHandleMouseWheelCyclesWord(t *testing.T) {
 	session := testSession(t)
 	m := NewModel(session, AppSettings{Language: "en", Phrases: 1}, []string{"en"})
+	beforeWord := m.session.Selections[0][1]
 	_ = m.View()
 
 	var target hitZone
@@ -87,15 +88,18 @@ func TestHandleMouseWheelOpensPicker(t *testing.T) {
 		Y:      target.y0,
 	})
 	m = updated.(Model)
-	if m.mode != modePicker {
-		t.Fatalf("mode=%v want picker", m.mode)
+	if m.mode != modeNormal {
+		t.Fatalf("wheel should keep normal mode, got %v", m.mode)
 	}
 	if m.session.BlockIndex != 0 || m.session.SlotIndex != 1 {
 		t.Fatalf("got block=%d slot=%d, want 0/1", m.session.BlockIndex, m.session.SlotIndex)
 	}
+	if len(m.session.Candidates) > 1 && m.session.Selections[0][1] == beforeWord {
+		t.Fatal("expected wheel to cycle word on slot")
+	}
 }
 
-func TestHandleMouseDoubleClickOpensPicker(t *testing.T) {
+func TestHandleMouseDoubleClickOnSlotDoesNotChangeMode(t *testing.T) {
 	session := testSession(t)
 	m := NewModel(session, AppSettings{Language: "en", Phrases: 1}, []string{"en"})
 	_ = m.View()
@@ -114,25 +118,24 @@ func TestHandleMouseDoubleClickOpensPicker(t *testing.T) {
 	click := tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonLeft, X: target.x0, Y: target.y0}
 	updated, _ := m.handleMouse(click)
 	m = updated.(Model)
-	if m.mode == modePicker {
-		t.Fatal("single click should not open picker")
+	if m.mode != modeNormal {
+		t.Fatalf("single click should keep normal mode, got %v", m.mode)
 	}
 
 	m.click.at = time.Now().Add(-100 * time.Millisecond)
 	updated, _ = m.handleMouse(click)
 	m = updated.(Model)
-	if m.mode != modePicker {
-		t.Fatalf("mode=%v want picker after double click", m.mode)
+	if m.mode != modeNormal {
+		t.Fatalf("mode=%v want normal after double click", m.mode)
 	}
 	if m.session.SlotIndex != 2 {
 		t.Fatalf("slot=%d want 2", m.session.SlotIndex)
 	}
 }
 
-func TestHandleMouseDoubleClickOnRollerConfirms(t *testing.T) {
+func TestHandleMouseDoubleClickOnRollerAppliesWord(t *testing.T) {
 	session := testSession(t)
 	m := NewModel(session, AppSettings{Language: "en", Phrases: 1}, []string{"en"})
-	m.beginPicker()
 	before := m.session.Selections[0][0]
 	_ = m.View()
 
@@ -155,17 +158,16 @@ func TestHandleMouseDoubleClickOnRollerConfirms(t *testing.T) {
 	updated, _ = m.handleMouse(click)
 	m = updated.(Model)
 	if m.mode != modeNormal {
-		t.Fatalf("mode=%v want normal after confirm", m.mode)
+		t.Fatalf("mode=%v want normal", m.mode)
 	}
-	if m.session.Selections[0][0] == before && len(m.session.visibleCandidates()) > 1 {
-		t.Fatal("expected roller double click to confirm a new word")
+	if m.session.Selections[0][0] == before && len(m.session.Candidates) > 1 {
+		t.Fatal("expected roller double click to apply a new word")
 	}
 }
 
 func TestHandleMouseWheelMovesRoller(t *testing.T) {
 	session := testSession(t)
 	m := NewModel(session, AppSettings{Language: "en", Phrases: 1}, []string{"en"})
-	m.beginPicker()
 	beforeIdx := m.session.RollerIndex
 	beforeWord := m.session.Selections[m.session.BlockIndex][m.session.SlotIndex]
 	_ = m.View()
@@ -188,18 +190,17 @@ func TestHandleMouseWheelMovesRoller(t *testing.T) {
 		Y:      target.y0,
 	})
 	m = updated.(Model)
-	if len(m.session.visibleCandidates()) > 1 && m.session.RollerIndex == beforeIdx {
-		t.Fatal("expected wheel down to move roller preview")
+	if len(m.session.Candidates) > 1 && m.session.RollerIndex == beforeIdx {
+		t.Fatal("expected wheel down to move roller")
 	}
-	if m.session.Selections[m.session.BlockIndex][m.session.SlotIndex] != beforeWord {
-		t.Fatal("expected wheel in picker to preview only, not apply selection")
+	if len(m.session.Candidates) > 1 && m.session.Selections[m.session.BlockIndex][m.session.SlotIndex] == beforeWord {
+		t.Fatal("expected wheel in picker to apply word change")
 	}
 }
 
 func TestHandleMouseClickRollerOffset(t *testing.T) {
 	session := testSession(t)
 	m := NewModel(session, AppSettings{Language: "en", Phrases: 1}, []string{"en"})
-	m.beginPicker()
 	view := m.View()
 	if view == "" {
 		t.Fatal("empty view")
@@ -226,7 +227,7 @@ func TestHandleMouseClickRollerOffset(t *testing.T) {
 		Y:      rollerY,
 	})
 	m = updated.(Model)
-	visible := m.session.visibleCandidates()
+	visible := m.session.Candidates
 	if len(visible) == 0 {
 		t.Fatal("no candidates")
 	}

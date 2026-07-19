@@ -14,7 +14,6 @@ func TestLoadSaveRoundTrip(t *testing.T) {
 	in := settings.Settings{
 		Language:             "es",
 		Phrases:              4,
-		AllowRepeat:          true,
 		AllowAdjacentRepeats: true,
 	}
 	if err := settings.Save(in); err != nil {

@@ -12,9 +12,11 @@ type setupModel struct {
 }
 
 func newSetupModel(languages []string, initial AppSettings) setupModel {
+	ctrl := newSettingsController(initial)
+	ctrl.syncFocusFromDraft(languages)
 	return setupModel{
 		languages: languages,
-		ctrl:      newSettingsController(initial),
+		ctrl:      ctrl,
 	}
 }
 
@@ -34,7 +36,7 @@ func (s setupModel) View(hits *hitTargets) string {
 	text := uiForLang(s.ctrl.draft.Language)
 	var b strings.Builder
 
-	b.WriteString(appTitleStyle.Render(text.setupTitle))
+	b.WriteString(renderAppHeader(text))
 	b.WriteString("\n\n")
 	b.WriteString(helpStyle.Render(text.setupSubtitle))
 	b.WriteString("\n\n")

@@ -12,13 +12,11 @@ const (
 	settingFieldLanguage = iota
 	settingFieldNoAdjacent
 	settingFieldPhrases
-	settingFieldAllowRepeat
 	settingFieldCount
 )
 
 const (
 	settingsChangeNone = iota
-	settingsChangeWords
 	settingsChangePassword
 )
 
@@ -125,9 +123,6 @@ func settingsChangeKind(applied, draft AppSettings) int {
 		applied.AllowAdjacentRepeats != draft.AllowAdjacentRepeats {
 		return settingsChangePassword
 	}
-	if applied.AllowRepeat != draft.AllowRepeat {
-		return settingsChangeWords
-	}
 	return settingsChangeNone
 }
 
@@ -136,8 +131,6 @@ func renderSettingsPendingWarning(lang string, kind int) string {
 	switch kind {
 	case settingsChangePassword:
 		return warnStyle.Render(text.settingsRegenPassword)
-	case settingsChangeWords:
-		return warnStyle.Render(text.settingsRegenWords)
 	default:
 		return ""
 	}
@@ -146,7 +139,7 @@ func renderSettingsPendingWarning(lang string, kind int) string {
 func renderSettingsPendingHint(lang string, kind int) string {
 	text := uiForLang(lang)
 	switch kind {
-	case settingsChangePassword, settingsChangeWords:
+	case settingsChangePassword:
 		return helpStyle.Render(text.settingsPendingHint)
 	default:
 		return ""

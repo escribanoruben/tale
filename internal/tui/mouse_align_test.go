@@ -8,7 +8,6 @@ import (
 func TestHitZonesAlignWithViewLines(t *testing.T) {
 	session := testSession(t)
 	m := NewModel(session, AppSettings{Language: "en", Phrases: 1}, []string{"en"})
-	m.beginPicker()
 	view := m.View()
 	lines := strings.Split(view, "\n")
 
