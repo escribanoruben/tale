@@ -16,6 +16,7 @@ const (
 	settingsExitUnfocus
 	settingsExitApply
 	settingsExitQuitApp
+	settingsExitConfirmDiscard
 )
 
 const (
@@ -306,6 +307,14 @@ func renderSettingsView(s AppSettings, languages []string, ctrl settingsControll
 	return strings.Join(lines, "\n"), contentHits
 }
 
+func renderSettingsDiscardConfirm(text uiText, innerW int) string {
+	var lines []string
+	lines = append(lines, "")
+	lines = append(lines, renderWrapped(warnStyle, innerW, text.settingsDiscardPrompt))
+	lines = append(lines, renderWrapped(helpStyle, innerW, text.settingsDiscardHelp))
+	return strings.Join(lines, "\n")
+}
+
 func settingsListHelp(text uiText, applied, draft AppSettings) string {
 	if settingsChangeKind(applied, draft) != settingsChangeNone {
 		return text.settingsListHelpPending
@@ -396,6 +405,9 @@ func settingsActionLine(focused bool, innerW int, label string) string {
 func handleSettingsKey(ctrl *settingsController, msg tea.KeyMsg, languages []string, applied AppSettings) settingsExit {
 	switch msg.String() {
 	case "esc":
+		if ctrl.hasPendingChanges(applied) {
+			return settingsExitConfirmDiscard
+		}
 		return settingsExitUnfocus
 	case "j", "down":
 		ctrl.moveFocus(1, languages, applied)

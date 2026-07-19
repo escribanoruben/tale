@@ -282,7 +282,8 @@ type Model struct {
 	session        *Session
 	settings       AppSettings
 	settingsCtrl   settingsController
-	settingsFocus  bool
+	settingsFocus         bool
+	settingsConfirmDiscard bool
 	languages      []string
 	keys           keyMap
 	mode           uiMode
@@ -569,6 +570,11 @@ func (m Model) View() string {
 	if m.settingsFocus {
 		view, hits := renderSettingsView(m.settings, m.languages, m.settingsCtrl, m.width)
 		b.WriteString(view)
+		if m.settingsConfirmDiscard {
+			text := uiFor(s.Profile)
+			innerW := viewContentWidth(m.width)
+			b.WriteString(renderSettingsDiscardConfirm(text, innerW))
+		}
 		if m.hits != nil {
 			m.hits.addZones(hits)
 		}

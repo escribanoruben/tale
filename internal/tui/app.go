@@ -267,15 +267,18 @@ func (m AppModel) handleSettingsMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m AppModel) handleSettingsKeys(keyMsg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.picker.settingsConfirmDiscard {
+		return m.handleSettingsDiscardConfirm(keyMsg)
+	}
 	exit := handleSettingsKey(&m.picker.settingsCtrl, keyMsg, m.languages, m.settings)
 	switch exit {
 	case settingsExitQuitApp:
 		m.picker.session.Quitting = true
 		return m, tea.Quit
+	case settingsExitConfirmDiscard:
+		m.picker.settingsConfirmDiscard = true
 	case settingsExitUnfocus:
-		m.picker.settingsCtrl = newSettingsController(m.settings)
-		m.picker.settingsFocus = false
-		m.picker.session.Err = nil
+		return m.discardSettingsAndUnfocus()
 	case settingsExitApply:
 		draft := m.picker.settingsCtrl.draft
 		draft.Phrases = snapPhraseCount(draft.Phrases)
@@ -287,9 +290,28 @@ func (m AppModel) handleSettingsKeys(keyMsg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 		m.picker.settingsFocus = false
+		m.picker.settingsConfirmDiscard = false
 		m.picker.settingsCtrl = newSettingsController(m.settings)
 		m.picker.session.Err = nil
 	}
+	return m, nil
+}
+
+func (m AppModel) handleSettingsDiscardConfirm(keyMsg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch keyMsg.String() {
+	case "y", "Y", "s", "S":
+		return m.discardSettingsAndUnfocus()
+	case "n", "N", "esc":
+		m.picker.settingsConfirmDiscard = false
+	}
+	return m, nil
+}
+
+func (m AppModel) discardSettingsAndUnfocus() (tea.Model, tea.Cmd) {
+	m.picker.settingsConfirmDiscard = false
+	m.picker.settingsCtrl = newSettingsController(m.settings)
+	m.picker.settingsFocus = false
+	m.picker.session.Err = nil
 	return m, nil
 }
 
@@ -387,6 +409,7 @@ func settingsFieldForKey(msg tea.KeyMsg) (int, bool) {
 
 func (m *AppModel) focusSettings(field int) {
 	m.picker.settingsFocus = true
+	m.picker.settingsConfirmDiscard = false
 	m.picker.settingsCtrl = newSettingsController(m.settings)
 	m.picker.settingsCtrl.syncFocusFromDraft(m.languages)
 	m.picker.settingsCtrl.jumpToSection(field, m.languages)

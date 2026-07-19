@@ -39,6 +39,8 @@ type uiText struct {
 	settingsListHelpPending  string
 	settingsConfirmApply     string
 	settingsConfirmDiscard   string
+	settingsDiscardPrompt    string
+	settingsDiscardHelp      string
 	settingsPendingHint  string
 	phraseOptionSummary  string
 	phraseUseCase3       string
@@ -103,6 +105,8 @@ func uiFor(p profile.Profile) uiText {
 			settingsListHelpPending: "j/k · mover  Espacio · elegir o aplicar  Esc · descartar",
 			settingsConfirmApply:    "Aplicar cambios",
 			settingsConfirmDiscard:  "Descartar y volver",
+			settingsDiscardPrompt:   "¿Descartar los cambios sin aplicar?",
+			settingsDiscardHelp:     "s · descartar   n / Esc · seguir editando",
 			settingsPendingHint:     "Cambios sin aplicar · Esc para salir",
 			settingsRegenPassword:   "Se regenerará la contraseña y las frases mnemotécnicas.",
 			settingsFocusHint:       "Tab · editar ajustes  ? · ayuda",
@@ -167,6 +171,8 @@ func uiFor(p profile.Profile) uiText {
 		settingsListHelpPending: "j/k · move  Space · select or apply  Esc · discard",
 		settingsConfirmApply:  "Apply changes",
 		settingsConfirmDiscard: "Discard and go back",
+		settingsDiscardPrompt: "Discard unapplied changes?",
+		settingsDiscardHelp:   "y · discard   n / Esc · keep editing",
 		settingsPendingHint:   "Unapplied changes · Esc to exit",
 		settingsRegenPassword:   "The password and mnemonic phrases will be regenerated.",
 		settingsFocusHint:       "Tab · edit settings  ? · help",
