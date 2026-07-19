@@ -28,11 +28,16 @@ Each word's normalized initial must match the block letter (`l`, `c`, `d`, `s`).
 | Principle | Detail |
 |-----------|--------|
 | Randomness first | Password is generated; the phrase is derived, never the reverse |
-| Restricted alphabet | Top frequent word-initial letters per language (22 EN, 20 ES) |
+| Language-adaptive alphabet | Each language defines its own restricted letter set from corpus frequency — not a global fixed size |
+| Mnemonics over raw entropy | Fewer initials trade a small entropy cost for better phrase quality; default passwords still carry ~86–89 bits |
 | Fixed template | `noun → adjective → verb → noun` per 4-character block |
 | No letter picking | User does not choose initials; TUI mode only picks among valid words |
 | Local-first | Works fully offline — word lists are embedded in the binary |
 | Single binary | ~3 MB with curated EN + ES dictionaries (~13k words, ~106 KB of text) |
+
+Built-in alphabets are **asymmetric on purpose**: English uses 22 letters (`j`, `k` added after the original top 20); Spanish stays at 20. Initial-letter distributions differ by language, so each builtin picks its own balance between dictionary coverage and memorable words. Custom languages set any alphabet in `~/.tale/profiles/{lang}.toml` — length is not locked to the builtins.
+
+Restricting the alphabet does not collapse security: dropping rare initials costs only a few bits compared with the full Latin set, while block-level rejection keeps every 4-letter chunk phraseable. Need more entropy without widening the alphabet? Increase `--length` instead.
 
 ## Status
 
