@@ -1,0 +1,13 @@
+id = "en"
+language = "en"
+display_name = "English (default)"
+password_length = 20
+block_size = 4
+alphabet = "abcdefghilmnoprstuvw"
+phrase_template = ["noun", "adjective", "verb", "noun"]
+data_layout = "letter"
+
+[normalization]
+strip_accents = true
+lowercase = true
+exclude_initial_enye = true

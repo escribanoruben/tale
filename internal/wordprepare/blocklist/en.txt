@@ -1,0 +1,9 @@
+# Category 1: profanity / vulgar
+fuck
+whore
+
+# Category 2: strong insults / slurs
+stupid
+dumb
+retarded
+lame

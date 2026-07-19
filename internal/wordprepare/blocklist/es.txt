@@ -1,0 +1,17 @@
+# Category 1: profanity / vulgar
+puta
+puto
+mierda
+coño
+joder
+jodido
+verga
+gilipollas
+pendejo
+carajo
+culo
+bastardo
+
+# Category 2: strong insults
+imbécil
+estúpido

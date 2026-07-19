@@ -39,7 +39,7 @@ Each word's normalized initial must match the block letter (`l`, `c`, `d`, `s`).
 | Component | Status |
 |-----------|--------|
 | Word lists (EN, ES) | Ready — `internal/worddata/` |
-| Profiles | Ready — embedded in binary |
+| Languages | Ready — embedded `en` / `es` (+ custom under `~/.tale`) |
 | `tale stats` | Ready |
 | `tale generate` | Ready — automatic password + mnemonic phrases |
 | `tale tui` | Ready — interactive word picker (rodillo) |
@@ -48,24 +48,30 @@ Each word's normalized initial must match the block letter (`l`, `c`, `d`, `s`).
 
 ```bash
 make build          # or: go build -o tale ./cmd/tale
-./tale stats         # or: make stats
+make run            # TUI without installing (language from ~/.tale/settings or system locale)
+./tale stats        # or: make stats
 
 # Generate password + mnemonic phrases (automatic)
-./tale generate --profile english_default
-./tale generate --profile english_default --length 16
-./tale generate --profile spanish_default
+./tale generate --language en
+./tale generate --language en --length 16
+./tale generate --language es
 
 # Interactive mnemonic picker
-./tale tui --profile english_default
-./tale tui --profile english_default --password abcdefghijklmnopqrst
-./tale tui --profile spanish_default
+./tale tui --language en
+./tale tui --language en --password abcdefghijklmnopqrst
+./tale tui --language es
 
 # Install (optional)
 make install        # or: go install ./cmd/tale
 
-# Custom profile from a built-in template
-tale profile init my_english --from english_default
-tale generate --profile my_english
+# Customize a built-in language (replaces embedded defaults for that code)
+tale language init es
+tale generate --language es
+
+# Add a custom language with its own alphabet (scaffolds empty word lists)
+tale language new pt --alphabet=abcdefghijlmnopqrstuvxz --display-name Portuguese
+# Fill ~/.tale/data/pt/{letter}/*.tsv, then:
+tale generate --language pt
 ```
 
 Run tests: `make test` (or `go test ./...`).
@@ -74,12 +80,12 @@ See `make help` for all targets.
 
 ## Languages
 
-| Language | Profile | Alphabet |
-|----------|---------|----------|
-| English | `english_default` | 20 letters: `abcdefghilmnoprstuvw` |
-| Spanish | `spanish_default` | 20 letters: `abcdefghijlmnopqrstv` |
+| Language | Code | Alphabet |
+|----------|------|----------|
+| English | `en` | 20 letters: `abcdefghilmnoprstuvw` |
+| Spanish | `es` | 20 letters: `abcdefghijlmnopqrstv` |
 
-Custom profiles can be created under `~/.tale/profiles` (see `tale profile init`).
+User language files live under `~/.tale/profiles/{language}.toml` and **replace** any built-in for that code. Customized languages load words only from `~/.tale/data/{language}/` (no embedded fallback). See `tale language list|show|init|new`.
 
 Spanish normalization rules:
 
@@ -118,12 +124,15 @@ See [internal/worddata/README.md](internal/worddata/README.md) for curation rule
 
 ## Development
 
-OpenSpec change: [`openspec/changes/mvp-password-mnemonic-generator/`](openspec/changes/mvp-password-mnemonic-generator/)
+OpenSpec changes:
+
+- [`openspec/changes/mvp-password-mnemonic-generator/`](openspec/changes/mvp-password-mnemonic-generator/)
+- [`openspec/changes/language-first-custom-languages/`](openspec/changes/language-first-custom-languages/)
 
 Contributing notes (including **GitHub issues in English**): [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ```bash
-openspec status --change mvp-password-mnemonic-generator
+openspec status --change language-first-custom-languages
 ```
 
 ## License

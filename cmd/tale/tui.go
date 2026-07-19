@@ -1,0 +1,43 @@
+package main
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/ruben/tales_vault_system/internal/dictionary"
+	"github.com/ruben/tales_vault_system/internal/profile"
+	"github.com/ruben/tales_vault_system/internal/tui"
+)
+
+func runTUI(args []string) {
+	cfg := parseRunConfig(args, true)
+
+	if err := tui.RunApp(tui.AppConfig{
+		Language:             cfg.Language,
+		Phrases:              cfg.Phrases,
+		Length:               cfg.Length,
+		Password:             cfg.Password,
+		AllowRepeat:          cfg.AllowRepeat,
+		AllowAdjacentRepeats: cfg.AllowAdjacentRepeats,
+		ForceSetup:           cfg.ForceSetup,
+		SaveSettings: func(s tui.AppSettings) error {
+			return persistRunConfig(runConfig{
+				Language:             s.Language,
+				Phrases:              s.Phrases,
+				AllowRepeat:          s.AllowRepeat,
+				AllowAdjacentRepeats: s.AllowAdjacentRepeats,
+			})
+		},
+		LoadProfile: func(language string) (profile.Profile, *dictionary.Dictionary, error) {
+			resolved, dict, err := resolveProfileAndDictionary(language)
+			if err != nil {
+				return profile.Profile{}, nil, err
+			}
+			printUserOverrideHint(resolved)
+			return resolved.Profile, dict, nil
+		},
+	}); err != nil {
+		fmt.Fprintf(os.Stderr, "tui: %v\n", err)
+		os.Exit(1)
+	}
+}

@@ -1,0 +1,15 @@
+# Build artifacts
+/tale
+*.test
+*.exe
+dist/
+
+# Test coverage
+coverage.out
+*.coverprofile
+
+# Tooling caches
+.cache/
+
+# Local IDE config
+.cursor/
