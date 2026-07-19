@@ -410,6 +410,7 @@ func settingsFieldForKey(msg tea.KeyMsg) (int, bool) {
 func (m *AppModel) focusSettings(field int) {
 	m.picker.settingsFocus = true
 	m.picker.settingsConfirmDiscard = false
+	m.picker.mode = modeNormal
 	m.picker.settingsCtrl = newSettingsController(m.settings)
 	m.picker.settingsCtrl.syncFocusFromDraft(m.languages)
 	m.picker.settingsCtrl.jumpToSection(field, m.languages)

@@ -342,6 +342,9 @@ func (m Model) Init() tea.Cmd { return nil }
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if m.mode == modeQuitConfirm {
+			return m.handleQuitConfirm(msg)
+		}
 		if m.mode == modeHelp {
 			return m.handleHelp(msg)
 		}
@@ -360,8 +363,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch {
 		case msg.Type == tea.KeyEsc:
-			m.session.Quitting = true
-			return m, tea.Quit
+			m.mode = modeQuitConfirm
+			m.session.Err = nil
+			return m, nil
 		case msg.String() == "?":
 			m.mode = modeHelp
 			m.session.Err = nil
@@ -508,6 +512,18 @@ func (m Model) handleRandomMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		m.mode = modeNormal
 	case "esc":
+		m.mode = modeNormal
+		m.session.Err = nil
+	}
+	return m, nil
+}
+
+func (m Model) handleQuitConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "y", "Y", "s", "S":
+		m.session.Quitting = true
+		return m, tea.Quit
+	case "n", "N", "esc":
 		m.mode = modeNormal
 		m.session.Err = nil
 	}
@@ -670,6 +686,9 @@ func (m Model) appendPickerFooter(b *strings.Builder, text uiText, registerHits 
 	if m.mode == modeChangeLetter {
 		b.WriteString("\n\n")
 		b.WriteString(renderOverlay(text.changeLetter, []string{text.changeCancel}))
+	}
+	if m.mode == modeQuitConfirm {
+		b.WriteString(renderQuitConfirm(text, viewContentWidth(m.width)))
 	}
 }
 

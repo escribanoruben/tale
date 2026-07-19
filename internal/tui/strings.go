@@ -52,6 +52,8 @@ type uiText struct {
 	entropyFormula       string
 	yes                  string
 	no                   string
+	quitPrompt           string
+	quitHelp             string
 }
 
 func uiFor(p profile.Profile) uiText {
@@ -120,6 +122,8 @@ func uiFor(p profile.Profile) uiText {
 			entropyFormula:          "~%.1f bits (%d caracteres × log₂(%d))",
 			yes:                     "sí",
 			no:                      "no",
+			quitPrompt:              "¿Salir y perder la contraseña y las frases actuales?",
+			quitHelp:                "s · salir   n / Esc · seguir",
 		}
 	}
 	return uiText{
@@ -186,6 +190,8 @@ func uiFor(p profile.Profile) uiText {
 		entropyFormula:        "~%.1f bits (%d chars × log₂(%d))",
 		yes:                   "yes",
 		no:                    "no",
+		quitPrompt:            "Quit and lose the current password and phrases?",
+		quitHelp:              "y · quit   n / Esc · stay",
 	}
 }
 

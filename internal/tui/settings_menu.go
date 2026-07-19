@@ -315,6 +315,14 @@ func renderSettingsDiscardConfirm(text uiText, innerW int) string {
 	return strings.Join(lines, "\n")
 }
 
+func renderQuitConfirm(text uiText, innerW int) string {
+	var lines []string
+	lines = append(lines, "")
+	lines = append(lines, renderWrapped(warnStyle, innerW, text.quitPrompt))
+	lines = append(lines, renderWrapped(helpStyle, innerW, text.quitHelp))
+	return strings.Join(lines, "\n")
+}
+
 func settingsListHelp(text uiText, applied, draft AppSettings) string {
 	if settingsChangeKind(applied, draft) != settingsChangeNone {
 		return text.settingsListHelpPending

@@ -17,6 +17,7 @@ const (
 	modeRandomMenu
 	modeChangeLetter
 	modeHelp
+	modeQuitConfirm
 )
 
 func (s *Session) phraseOpts() phrase.Options {
