@@ -36,10 +36,15 @@ The system SHALL provide a `tui` subcommand for interactive mnemonic constructio
 
 In TUI mode, the system SHALL present filtered word candidates per grammatical slot and allow the user to select one word per slot for each block.
 
-#### Scenario: Candidate filtering
+#### Scenario: English candidate filtering
 
-- **WHEN** the user navigates block 1 with letters `lcds` in TUI mode
-- **THEN** noun choices come from `data/{lang}/l/nouns.tsv`, adjectives from `c/adjectives.tsv`, verbs from `d/verbs.tsv`, nouns from `s/nouns.tsv`
+- **WHEN** the user navigates block 1 with letters `lcds` in TUI mode with language `en`
+- **THEN** adjective choices come from `data/en/l/adjectives.tsv`, nouns from `c/nouns.tsv`, verbs from `d/verbs.tsv`, nouns from `s/nouns.tsv`
+
+#### Scenario: Spanish candidate filtering
+
+- **WHEN** the user navigates block 1 with letters `lcds` in TUI mode with language `es`
+- **THEN** noun choices come from `data/es/l/nouns.tsv`, adjectives from `c/adjectives.tsv`, verbs from `d/verbs.tsv`, nouns from `s/nouns.tsv`
 
 ### Requirement: Language and length flags
 

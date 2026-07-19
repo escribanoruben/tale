@@ -4,7 +4,7 @@ display_name = "English (default)"
 password_length = 20
 block_size = 4
 alphabet = "abcdefghijklmnoprstuvw"
-phrase_template = ["noun", "adjective", "verb", "noun"]
+phrase_template = ["adjective", "noun", "verb", "noun"]
 data_layout = "letter"
 
 [normalization]

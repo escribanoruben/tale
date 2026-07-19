@@ -7,7 +7,7 @@ context: |
   Modes: CLI random generation + interactive TUI for word selection
   Languages: English and Spanish (v1)
   Configuration: TOML profiles (default: english_default, spanish_default)
-  Phrase template: noun, adjective, verb, noun (4 words per block)
+  Phrase template: per language (EN: adjective, noun, verb, noun; ES: noun, adjective, verb, noun)
   Default password length: 20 characters (5 blocks of 4)
   Alphabet: 20 most frequent word-initial letters per language (profile-defined)
   Word data: bundled static lists (nouns, adjectives, verbs only)
