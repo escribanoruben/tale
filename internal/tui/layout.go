@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -9,8 +11,22 @@ const (
 	commandName     = "tale"
 )
 
+// appVersion is set when RunApp starts; shown in the TUI header.
+var appVersion string
+
+func formatVersionLabel(version string) string {
+	if version == "" || version == "dev" {
+		return " (dev)"
+	}
+	if strings.HasPrefix(version, "v") {
+		return " " + version
+	}
+	return " v" + version
+}
+
 func renderAppHeader(text uiText) string {
-	return appTitleStyle.Render(commandName) + helpStyle.Render(" — "+text.commandTagline)
+	title := appTitleStyle.Render(commandName) + helpStyle.Render(formatVersionLabel(appVersion))
+	return title + helpStyle.Render(" — "+text.commandTagline)
 }
 
 func joinPasswordRow(termWidth int, passwordPanel, entropy string) string {

@@ -13,6 +13,7 @@ func runTUI(args []string) {
 	cfg := parseRunConfig(args, true)
 
 	if err := tui.RunApp(tui.AppConfig{
+		Version:              version,
 		Language:             cfg.Language,
 		Phrases:              cfg.Phrases,
 		Length:               cfg.Length,

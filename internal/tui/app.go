@@ -18,6 +18,7 @@ type AppSettings struct {
 
 // AppConfig configures the full interactive flow.
 type AppConfig struct {
+	Version              string
 	Language             string
 	Phrases              int
 	Length               int
@@ -49,6 +50,7 @@ type AppModel struct {
 
 // RunApp starts setup (if needed) and the mnemonic picker.
 func RunApp(cfg AppConfig) error {
+	appVersion = cfg.Version
 	languages, err := profile.AvailableLanguages()
 	if err != nil {
 		return err

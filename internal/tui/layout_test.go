@@ -9,12 +9,25 @@ import (
 
 func TestRenderAppHeader(t *testing.T) {
 	text := uiForLang("es")
+	prev := appVersion
+	t.Cleanup(func() { appVersion = prev })
+
+	appVersion = "0.1.2"
 	header := renderAppHeader(text)
 	if !strings.Contains(header, "tale") {
 		t.Fatalf("header missing command name:\n%s", header)
 	}
+	if !strings.Contains(header, "v0.1.2") {
+		t.Fatalf("header missing version:\n%s", header)
+	}
 	if !strings.Contains(header, "Tales Vault System") {
 		t.Fatalf("header missing tagline:\n%s", header)
+	}
+
+	appVersion = "dev"
+	header = renderAppHeader(text)
+	if !strings.Contains(header, "(dev)") {
+		t.Fatalf("header missing dev label:\n%s", header)
 	}
 }
 

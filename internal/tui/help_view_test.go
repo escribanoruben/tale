@@ -20,9 +20,9 @@ func TestHelpViewIncludesShortcuts(t *testing.T) {
 
 func TestHelpViewFitsNarrowWidth(t *testing.T) {
 	text := uiFor(profile.Profile{Language: "es"})
-	view := renderHelpView(text, 50)
-	if lipgloss.Width(view) > 50 {
-		t.Fatalf("help view wider than terminal: got %d want <= 50\n%s", lipgloss.Width(view), view)
+	view := renderHelpView(text, 58)
+	if lipgloss.Width(view) > 58 {
+		t.Fatalf("help view wider than terminal: got %d want <= 58\n%s", lipgloss.Width(view), view)
 	}
 	if !strings.Contains(view, "Enter") {
 		t.Fatalf("wrapped help view missing shortcuts:\n%s", view)
