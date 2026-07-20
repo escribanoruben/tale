@@ -23,8 +23,13 @@ type uiText struct {
 	summaryTitle         string
 	recovery             string
 	cancelled            string
-	setupSubtitle        string
+	welcomeTitle         string
+	welcomeBody          []string
+	welcomeDefaultsOption string
+	welcomeCustomizeOption string
+	welcomeHelp          string
 	setupHelp            string
+	setupStart           string
 	settingsBarPrefix    string
 	settingsTitle        string
 	settingsLanguage     string
@@ -93,8 +98,16 @@ func uiFor(p profile.Profile) uiText {
 			summaryTitle:            "Frases mnemotécnicas",
 			recovery:                "Recuperación: toma la primera letra de cada palabra (sin tildes, ñ→n).",
 			cancelled:               "Cancelado.",
-			setupSubtitle:           "Configura el idioma y las opciones de generación antes de empezar.",
-			setupHelp:               "j/k · mover  Espacio · elegir  g · empezar  Esc · salir",
+			welcomeTitle:            "Primera ejecución",
+			welcomeBody: []string{
+				"Es la primera vez que ejecutas tale. Puedes empezar con los valores por defecto o abrir la configuración para elegir idioma, longitud y otras opciones.",
+				"Los ajustes se guardan en ~/.tale/settings.toml y podrás cambiarlos más tarde con Tab en el selector de palabras.",
+			},
+			welcomeDefaultsOption:   "Usar valores por defecto — %s, %d frases, sin letras iguales seguidas",
+			welcomeCustomizeOption:  "Configurar antes de empezar",
+			welcomeHelp:             "j/k · mover  Enter · elegir  Esc · salir",
+			setupHelp:               "j/k · mover  Espacio · elegir  Enter · empezar  Esc · salir",
+			setupStart:              "Empezar",
 			settingsBarPrefix:       "Ajustes",
 			settingsTitle:           "Ajustes de generación",
 			settingsSubtitle:        "Elige idioma, longitud y restricciones de la contraseña.",
@@ -161,8 +174,16 @@ func uiFor(p profile.Profile) uiText {
 		summaryTitle:          "Mnemonic phrases",
 		recovery:              "Recovery: take the first letter of each word (strip accents, ñ→n).",
 		cancelled:             "Cancelled.",
-		setupSubtitle:         "Choose language and generation options before you start.",
-		setupHelp:             "j/k · move  Space · select  g · start  Esc · quit",
+		welcomeTitle:          "First run",
+		welcomeBody: []string{
+			"This is your first time running tale. You can start with the defaults or open settings to choose language, length, and other options.",
+			"Settings are saved to ~/.tale/settings.toml and you can change them later with Tab in the word picker.",
+		},
+		welcomeDefaultsOption: "Use defaults — %s, %d phrases, no adjacent repeats",
+		welcomeCustomizeOption: "Configure before starting",
+		welcomeHelp:           "j/k · move  Enter · choose  Esc · quit",
+		setupHelp:             "j/k · move  Space · select  Enter · start  Esc · quit",
+		setupStart:            "Start",
 		settingsBarPrefix:     "Settings",
 		settingsTitle:         "Generation settings",
 		settingsSubtitle:      "Choose language, length, and password constraints.",

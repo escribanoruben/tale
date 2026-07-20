@@ -71,7 +71,14 @@ Use `tale stats` to inspect word counts per language, letter, and part of speech
 
 ## Sources and licenses
 
-| Language | Source | License |
-|----------|--------|---------|
-| English | david47k/top-english-wordlists | Check upstream repo |
-| Spanish | doozan/spanish_data `frequency.csv` | CC-BY-SA 3.0 |
+Full attributions: [NOTICE](../../NOTICE) at the repository root.
+
+| Language | Path | Upstream | License |
+|----------|------|----------|---------|
+| English | `internal/worddata/en/` | [david47k/top-english-wordlists](https://github.com/david47k/top-english-wordlists) | [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| Spanish | `internal/worddata/es/` | [doozan/spanish_data](https://github.com/doozan/spanish_data) `frequency.csv` (from [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords)) | [CC-BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) |
+
+The English lists require attribution when redistributed. The Spanish lists are
+derivative works and must stay under CC-BY-SA 3.0 (the curated TSV files in this
+directory satisfy that obligation). The tale Go code remains under MIT; see
+[LICENSE](../../LICENSE).

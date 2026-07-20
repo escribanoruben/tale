@@ -193,4 +193,4 @@ openspec status --change language-first-custom-languages
 
 ## License
 
-TBD. Word list sources have their own licenses — see [internal/worddata/README.md](internal/worddata/README.md).
+[MIT](LICENSE) for the software. Embedded word lists have separate licenses — see [NOTICE](NOTICE) and [internal/worddata/README.md](internal/worddata/README.md).

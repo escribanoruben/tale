@@ -13,6 +13,7 @@ type setupModel struct {
 
 func newSetupModel(languages []string, initial AppSettings) setupModel {
 	ctrl := newSettingsController(initial)
+	ctrl.setupMode = true
 	ctrl.syncFocusFromDraft(languages)
 	return setupModel{
 		languages: languages,
@@ -25,8 +26,8 @@ func (s *setupModel) toSettings() AppSettings {
 	return s.ctrl.draft
 }
 
-func (s *setupModel) update(msg tea.KeyMsg) {
-	handleSettingsKey(&s.ctrl, msg, s.languages, s.ctrl.draft)
+func (s *setupModel) update(msg tea.KeyMsg) settingsExit {
+	return handleSettingsKey(&s.ctrl, msg, s.languages, s.ctrl.draft)
 }
 
 func (s setupModel) View(hits *hitTargets) string {
@@ -38,16 +39,11 @@ func (s setupModel) View(hits *hitTargets) string {
 
 	b.WriteString(renderAppHeader(text))
 	b.WriteString("\n\n")
-	b.WriteString(helpStyle.Render(text.setupSubtitle))
-	b.WriteString("\n\n")
 
 	widget, zones := renderSettingsWidget(s.ctrl.draft, s.languages, s.ctrl, true)
 	if hits != nil {
 		hits.addOffset(viewLineY(&b), zones)
 	}
 	b.WriteString(widget)
-
-	b.WriteString("\n\n")
-	b.WriteString(helpStyle.Render(text.setupHelp))
 	return b.String()
 }
