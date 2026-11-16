@@ -22,4 +22,4 @@
 ## 5. Verification
 
 - [x] 5.1 Run `go test ./...`, `make release-plan`, and `openspec validate ci-release-tooling`
-- [ ] 5.2 CI green on GitHub after merge (via push mirror)
+- [x] 5.2 CI green on GitHub after merge (via push mirror)

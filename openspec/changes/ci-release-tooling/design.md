@@ -16,3 +16,4 @@
 
 - Conventional Commits are a convention, not enforced: svu fails politely ("no commits warrant a release") and `BUMP=` / `VERSION=` overrides cover irregular histories.
 - The push-mirror sync depends on stored Forgejo credentials (`~/.git-credentials` or the configured credential helper); on failure the script warns and the tag lands with the next commit push.
+- `go mod tidy` is toolchain-sensitive while tool directives exist: go 1.24 (the version pinned by `go-version-file`) keeps test dependencies of tool modules that go 1.26 prunes. Run local tidy with `GOTOOLCHAIN=go1.24.2` (or bump the `go` directive) or the `go-mod-tidy` CI check will fail.
