@@ -177,14 +177,14 @@ func TestRankImageabilityPenalty(t *testing.T) {
 	// penalty is the deciding term
 	words := []string{"idea", "box", "conceptual", "blue", "eat", "food", "drink", "casa"}
 	rows := [][]float32{
-		{0, 1, 0},          // idea (abstract)
-		{1, 0, 0},          // box (concrete)
-		{0, 0.58, 0.815},   // conceptual ~ idea (cos 0.58)
-		{0.5, 0.866, 0},    // blue ~ box (cos 0.50)
-		{0.5, 0.5, 0.7071}, // eat
-		{0.6, 0.4, 0},      // food ~ eat
-		{0.1, 0.9, 0.43},   // drink ~ idea axis
-		{0, 0.9939, 0.1104},// casa ~ idea axis
+		{0, 1, 0},           // idea (abstract)
+		{1, 0, 0},           // box (concrete)
+		{0, 0.58, 0.815},    // conceptual ~ idea (cos 0.58)
+		{0.5, 0.866, 0},     // blue ~ box (cos 0.50)
+		{0.5, 0.5, 0.7071},  // eat
+		{0.6, 0.4, 0},       // food ~ eat
+		{0.1, 0.9, 0.43},    // drink ~ idea axis
+		{0, 0.9939, 0.1104}, // casa ~ idea axis
 	}
 	data, err := worddata.EncodeEmbeddings(3, words, rows)
 	if err != nil {
