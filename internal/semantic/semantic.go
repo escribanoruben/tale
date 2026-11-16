@@ -156,21 +156,37 @@ func Rank(e *worddata.Embeddings, lists [][]string, roles [4]int, ro RankOptions
 				bestAdj = j
 			}
 		}
+		// subject-object cosines, computed once per subject
+		nn := make([]float64, len(obj))
+		for o := range obj {
+			nn[o] = dot(sub[i], obj[o])
+		}
 		// verb/object table for this subject; the band couples
 		// subject-object.
 		d := make([]float64, len(verb)*len(obj))
 		for j := range verb {
 			for o := range obj {
-				nn := dot(sub[i], obj[o])
-				d[j*len(obj)+o] = mSVerb[i][j] + mVObj[j][o] + Band(nn)
+				d[j*len(obj)+o] = mSVerb[i][j] + mVObj[j][o] + Band(nn[o])
 			}
 		}
-		idx := make([]int, len(d))
-		for t := range idx {
-			idx[t] = t
+		// keep the top verb/object combos per subject by linear scan
+		// (deterministic: earlier index wins ties) — sorting the whole
+		// table would dominate runtime
+		b0, b1, b2 := -1, -1, -1
+		for t := range d {
+			switch {
+			case b0 < 0 || d[t] > d[b0]:
+				b2, b1, b0 = b1, b0, t
+			case b1 < 0 || d[t] > d[b1]:
+				b2, b1 = b1, t
+			case b2 < 0 || d[t] > d[b2]:
+				b2 = t
+			}
 		}
-		sort.SliceStable(idx, func(a, b int) bool { return d[idx[a]] > d[idx[b]] })
-		for _, t := range idx[:min(topCombosPerSubject, len(idx))] {
+		for _, t := range [3]int{b0, b1, b2} {
+			if t < 0 {
+				continue
+			}
 			j, o := t/len(obj), t%len(obj)
 			score := (mAdj[i][bestAdj] + d[t]) / 3
 			// imageability: concrete scenes beat abstract soup
