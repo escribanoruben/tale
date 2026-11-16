@@ -77,9 +77,14 @@ func Stories(e *worddata.Embeddings, pools [][]Candidate, roles [4]int, m int) [
 	}
 
 	chain := func(i, a, b int) float64 {
+		// subject of block i+1 vs the previous phrase's nouns, and the
+		// reverse direction (subject of block i vs the next phrase's
+		// nouns): each adjacent pair is linked from both sides
 		d1 := dot(n1[i+1][b], n1[i][a])
 		d2 := dot(n1[i+1][b], n2[i][a])
-		return DefaultLinkWeight * max(d1, d2)
+		d3 := dot(n1[i][a], n1[i+1][b])
+		d4 := dot(n1[i][a], n2[i+1][b])
+		return DefaultLinkWeight * max(d1, max(d2, max(d3, d4)))
 	}
 
 	type step struct {
@@ -139,8 +144,11 @@ func Stories(e *worddata.Embeddings, pools [][]Candidate, roles [4]int, m int) [
 			node, rank = st.prev, st.prevRank
 		}
 		phrases[0] = pools[0][node].Words
-		// closure: the story's last object noun back to its opening subject
-		score := f.score + DefaultLinkWeight*dot(n2[n-1][f.node], n1[0][node])
+		// closure: the story ends back at its opening, linked from both
+		// sides (returning object vs opening subject, and the two
+		// protagonists)
+		clo := max(dot(n2[n-1][f.node], n1[0][node]), dot(n1[n-1][f.node], n1[0][node]))
+		score := f.score + DefaultLinkWeight*clo
 		all = append(all, Story{Phrases: phrases, Score: score})
 	}
 

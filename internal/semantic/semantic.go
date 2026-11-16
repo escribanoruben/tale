@@ -36,10 +36,23 @@ const (
 	BandLow        = 0.05 // gently pull up pairs looser than this
 	BandHighWeight = 1.0
 	BandLowWeight  = 0.3
+	// adjective band: same synonym-trap guard as the noun band, with a
+	// softer threshold ("luna plateada" survives, "silencio callado" falls)
+	AdjBandHigh   = 0.60
+	AdjBandWeight = 0.5
 	// topCombosPerSubject: verb/object combos kept per subject for pool
 	// diversity (experiment sweet spot: 10).
 	topCombosPerSubject = 10
 )
+
+// AdjBand scores the noun1-adjective edge: penalty only for
+// near-synonym pairs above AdjBandHigh.
+func AdjBand(cos float64) float64 {
+	if cos > AdjBandHigh {
+		return -AdjBandWeight * (cos - AdjBandHigh)
+	}
+	return 0
+}
 
 // Candidate is one ranked phrase.
 type Candidate struct {
@@ -208,6 +221,8 @@ func Rank(e *worddata.Embeddings, lists [][]string, roles [4]int, ro RankOptions
 				wv = DefaultVerbWeight
 			}
 			score := (wa*mAdj[i][bestAdj] + wv*(mSVerb[i][j]+mVObj[j][o])) / (wa + 2*wv)
+			// synonym guard on the adjective edge
+			score += AdjBand(mAdj[i][bestAdj])
 			// imageability: concrete scenes beat abstract soup
 			if len(ro.LowImageability) > 0 {
 				for _, w := range []string{words[Subject][i], words[Verb][j], words[Object][o], words[Adjective][bestAdj]} {
