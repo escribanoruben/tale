@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/escribanoruben/tale/internal/dictionary"
+	"github.com/escribanoruben/tale/internal/normalize"
 	"github.com/escribanoruben/tale/internal/profile"
 )
 
@@ -53,7 +54,7 @@ func TestSemanticPoolInitialsSpellBlock(t *testing.T) {
 			t.Fatalf("phrase %v does not match template", words)
 		}
 		for i, w := range words {
-			initial := strings.ToLower(string([]rune(w)[0]))
+			initial := normalize.Initial(w)
 			if initial != string(block[i]) {
 				t.Fatalf("word %q initial %q != block letter %q", w, initial, block[i])
 			}
@@ -128,7 +129,7 @@ func TestSemanticStoriesShapes(t *testing.T) {
 		seen := map[string]bool{}
 		for bi, words := range story {
 			for i, w := range words {
-				initial := strings.ToLower(string([]rune(w)[0]))
+				initial := normalize.Initial(w)
 				if initial != string(blocks[bi][i]) {
 					t.Fatalf("word %q initial != block letter (story %v)", w, story)
 				}

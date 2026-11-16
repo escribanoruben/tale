@@ -36,7 +36,7 @@ const (
 	BandLow             = 0.05 // gently pull up pairs looser than this
 	BandHighWeight      = 1.0
 	BandLowWeight       = 0.3
-	topCombosPerSubject = 3 // verb/object combos kept per subject for pool diversity
+	topCombosPerSubject = 5 // verb/object combos kept per subject for pool diversity
 )
 
 // Candidate is one ranked phrase.

@@ -12,10 +12,11 @@ import (
 )
 
 // semanticPoolK is the number of ranked candidates per block (the TUI
-// cycles through them); semanticStoriesM is how many complete stories
-// the DP keeps for browsing.
+// cycles through them); more nodes per layer widen the DP search
+// without changing its guarantees. semanticStoriesM is how many
+// complete stories the DP keeps for browsing.
 const (
-	semanticPoolK    = 10
+	semanticPoolK    = 25
 	semanticStoriesM = 8
 )
 
