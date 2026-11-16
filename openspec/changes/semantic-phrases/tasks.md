@@ -19,7 +19,8 @@
 - [x] 3.2 Exact top-K per block (K = 10) with diversity demotion; deterministic; respects `used` word set
 - [x] 3.3 Selection mode wiring: enabled by default for builtin languages with vectors; settings/profile key `semantic = false` disables; silent fallback to current scoring for languages without vectors
 - [x] 3.4 Template constants: slot roles (n1, verb, n2, adj) derived from `PhraseTemplate` so scoring follows the profile
-- [x] 3.5 Whole-story optimization: per-block pools → layered DAG → exact k-best DP with chain edges (subject vs previous nouns, weight 2.0) and closure edge (final object vs first subject); repetition penalty + filter across blocks
+- [x] 3.5 Whole-story optimization: per-block pools (K=100, soft diversity ≤1 shared word, 10 combos/subject) → layered DAG → single-pass k-best DP with chain edges (weight 2.0) and closure edge re-ranked on reconstruction; measured: closure +55 %, abstracts 0, ~0.3 s
+- [x] 3.8 Refrains allowed: cross-block word repetition no longer penalized or filtered (user decision — repetition aids recall); within-phrase root repeats still rejected
 - [x] 3.6 Imageability penalty: curated `imageability.txt` per language (abstract nouns + stative verbs), −0.25 per hit on the anchored mean; abstract top-1 phrases 23 % → 3 % in the ES experiment
 - [x] 3.7 Spanish gender agreement by embedding: derived feminine adjective forms added to the lists and `prepare-wordlists` (1,295 entries); the anchored cos(noun1, adjective) edge selects the agreeing form (verified 15/15 pairs); regeneration keeps them
 

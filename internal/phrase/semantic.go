@@ -2,21 +2,20 @@ package phrase
 
 import (
 	"fmt"
-	"sort"
 
 	"github.com/escribanoruben/tale/internal/dictionary"
-	"github.com/escribanoruben/tale/internal/normalize"
 	"github.com/escribanoruben/tale/internal/profile"
 	"github.com/escribanoruben/tale/internal/semantic"
 	"github.com/escribanoruben/tale/internal/worddata"
 )
 
-// semanticPoolK is the number of ranked candidates per block (the TUI
-// cycles through them); more nodes per layer widen the DP search
-// without changing its guarantees. semanticStoriesM is how many
-// complete stories the DP keeps for browsing.
 const (
-	semanticPoolK    = 25
+	// semanticPoolK is the number of ranked candidates per block (the
+	// TUI cycles through them); more nodes per layer widen the DP
+	// search without changing its guarantees. semanticStoriesM is how
+	// many complete stories the DP keeps for browsing. MaxSharedWords=1
+	// lets the same noun appear in several scene variants.
+	semanticPoolK    = 100
 	semanticStoriesM = 8
 )
 
@@ -140,7 +139,9 @@ func semanticPool(p profile.Profile, block string, dict *dictionary.Dictionary, 
 	for i := range lists {
 		lists[i] = buckets[i].Words
 	}
-	return semantic.Rank(emb, lists, roles, semantic.RankOptions{K: k, LowImageability: lowImg}), nil
+	return semantic.Rank(emb, lists, roles, semantic.RankOptions{
+		K: k, LowImageability: lowImg, MaxSharedWords: 1,
+	}), nil
 }
 
 // SemanticPool ranks the top-k candidate phrases for one block under the
@@ -192,79 +193,11 @@ func SemanticStories(p profile.Profile, blocks []string, dict *dictionary.Dictio
 		return nil, fmt.Errorf("no semantic story for the given blocks")
 	}
 
-	// Re-rank with a repetition penalty: a story that reuses a word or
-	// root across blocks reads like a stutter, whatever its cosine score.
-	type ranked struct {
-		phrases [][]string
-		score   float64
-	}
-	rankedStories := make([]ranked, 0, len(stories))
+	// Cross-block word repetition is allowed: a repeated word reads as a
+	// refrain and can aid recall. Stories come ranked by the DP score.
+	out := make([][][]string, 0, len(stories))
 	for _, st := range stories {
-		rw, rr := repeatCounts(st.Phrases)
-		rankedStories = append(rankedStories, ranked{st.Phrases, st.Score - 3*float64(rw) - float64(rr)})
-	}
-	sort.SliceStable(rankedStories, func(i, j int) bool { return rankedStories[i].score > rankedStories[j].score })
-
-	out := make([][][]string, 0, len(rankedStories))
-	for _, r := range rankedStories {
-		out = append(out, r.phrases)
-	}
-	for _, strict := range []bool{true, false} {
-		var filtered [][][]string
-		for _, story := range out {
-			if storyOK(story, strict) {
-				filtered = append(filtered, story)
-			}
-		}
-		if len(filtered) > 0 {
-			return filtered, nil
-		}
+		out = append(out, st.Phrases)
 	}
 	return out, nil
-}
-
-// storyOK reports whether a story repeats no word (and, when strict, no
-// root) across its blocks.
-func storyOK(story [][]string, strictRoots bool) bool {
-	words := make(map[string]bool)
-	roots := make(map[string]bool)
-	for _, phrase := range story {
-		for _, w := range phrase {
-			key := normalize.Key(w)
-			if words[key] {
-				return false
-			}
-			words[key] = true
-			root := rootKey(w)
-			if roots[root] {
-				if strictRoots {
-					return false
-				}
-			}
-			roots[root] = true
-		}
-	}
-	return true
-}
-
-// repeatCounts returns the number of repeated word occurrences and
-// repeated roots across a story's blocks.
-func repeatCounts(story [][]string) (words, roots int) {
-	ws := make(map[string]int)
-	rs := make(map[string]int)
-	for _, phrase := range story {
-		for _, w := range phrase {
-			key := normalize.Key(w)
-			ws[key]++
-			if ws[key] > 1 {
-				words++
-			}
-			r := rootKey(w)
-			rs[r]++
-			if rs[r] > 1 {
-				roots++
-			}
-		}
-	}
-	return words, roots
 }

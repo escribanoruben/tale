@@ -126,17 +126,12 @@ func TestSemanticStoriesShapes(t *testing.T) {
 		if len(story) != len(blocks) {
 			t.Fatalf("story blocks %d, want %d", len(story), len(blocks))
 		}
-		seen := map[string]bool{}
 		for bi, words := range story {
 			for i, w := range words {
 				initial := normalize.Initial(w)
 				if initial != string(blocks[bi][i]) {
 					t.Fatalf("word %q initial != block letter (story %v)", w, story)
 				}
-				if seen[w] {
-					t.Fatalf("word %q repeated across story", w)
-				}
-				seen[w] = true
 			}
 		}
 	}

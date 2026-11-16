@@ -32,11 +32,13 @@ const (
 // (openspec/changes/semantic-phrases/design.md): mush rejection at
 // negligible score cost.
 const (
-	BandHigh            = 0.45 // reject noun pairs closer than this (near-synonyms)
-	BandLow             = 0.05 // gently pull up pairs looser than this
-	BandHighWeight      = 1.0
-	BandLowWeight       = 0.3
-	topCombosPerSubject = 5 // verb/object combos kept per subject for pool diversity
+	BandHigh       = 0.45 // reject noun pairs closer than this (near-synonyms)
+	BandLow        = 0.05 // gently pull up pairs looser than this
+	BandHighWeight = 1.0
+	BandLowWeight  = 0.3
+	// topCombosPerSubject: verb/object combos kept per subject for pool
+	// diversity (experiment sweet spot: 10).
+	topCombosPerSubject = 10
 )
 
 // Candidate is one ranked phrase.
@@ -58,6 +60,13 @@ type RankOptions struct {
 	// LowImageability marks words that are hard to picture (abstract
 	// nouns, stative verbs); each hit costs ImageabilityPenalty.
 	LowImageability map[string]struct{}
+	// MaxSharedWords relaxes the within-pool diversity: a candidate is
+	// skipped only when it shares more than this many words with an
+	// already-picked one (0 = current disjoint behavior; 1 lets the
+	// same noun appear with different verb/object scenes).
+	MaxSharedWords int
+	// CombosPerSubject overrides topCombosPerSubject when > 0.
+	CombosPerSubject int
 }
 
 // DefaultLinkWeight pairs with the offline experiment: strong enough to
@@ -172,21 +181,11 @@ func Rank(e *worddata.Embeddings, lists [][]string, roles [4]int, ro RankOptions
 		// keep the top verb/object combos per subject by linear scan
 		// (deterministic: earlier index wins ties) — sorting the whole
 		// table would dominate runtime
-		b0, b1, b2 := -1, -1, -1
-		for t := range d {
-			switch {
-			case b0 < 0 || d[t] > d[b0]:
-				b2, b1, b0 = b1, b0, t
-			case b1 < 0 || d[t] > d[b1]:
-				b2, b1 = b1, t
-			case b2 < 0 || d[t] > d[b2]:
-				b2 = t
-			}
+		combos := ro.CombosPerSubject
+		if combos <= 0 {
+			combos = topCombosPerSubject
 		}
-		for _, t := range [3]int{b0, b1, b2} {
-			if t < 0 {
-				continue
-			}
+		for _, t := range topN(d, combos) {
 			j, o := t/len(obj), t%len(obj)
 			score := (mAdj[i][bestAdj] + d[t]) / 3
 			// imageability: concrete scenes beat abstract soup
@@ -206,6 +205,7 @@ func Rank(e *worddata.Embeddings, lists [][]string, roles [4]int, ro RankOptions
 	var out []Candidate
 	picked := make(map[string]bool)
 	pickedRoots := make(map[string]bool)
+	var pickedWords [][]string // for soft-diversity overlap checks
 	for _, r := range raws {
 		if len(out) == ro.K {
 			break
@@ -214,12 +214,29 @@ func Rank(e *worddata.Embeddings, lists [][]string, roles [4]int, ro RankOptions
 		if !ro.AllowRepeat {
 			distinct := true
 			for a := 0; a < 4 && distinct; a++ {
-				if picked[normalize.Key(w[a])] || pickedRoots[rootOf(w[a])] || (ro.UsedRoots != nil && ro.UsedRoots[rootOf(w[a])]) {
+				if picked[normalize.Key(w[a])] || (ro.MaxSharedWords == 0 && pickedRoots[rootOf(w[a])]) || (ro.UsedRoots != nil && ro.UsedRoots[rootOf(w[a])]) {
 					distinct = false
 					break
 				}
 				for b := a + 1; b < 4; b++ {
-					if w[a] == w[b] || rootOf(w[a]) == rootOf(w[b]) {
+					if w[a] == w[b] || (ro.MaxSharedWords == 0 && rootOf(w[a]) == rootOf(w[b])) {
+						distinct = false
+						break
+					}
+				}
+			}
+			if distinct && ro.MaxSharedWords > 0 {
+				// soft diversity: skip only when a picked candidate
+				// shares more than MaxSharedWords with this one
+				for _, p := range pickedWords {
+					shared := 0
+					for _, x := range p {
+						if normalize.Key(x) == normalize.Key(w[0]) || normalize.Key(x) == normalize.Key(w[1]) ||
+							normalize.Key(x) == normalize.Key(w[2]) || normalize.Key(x) == normalize.Key(w[3]) {
+							shared++
+						}
+					}
+					if shared > ro.MaxSharedWords {
 						distinct = false
 						break
 					}
@@ -235,9 +252,14 @@ func Rank(e *worddata.Embeddings, lists [][]string, roles [4]int, ro RankOptions
 		}
 		out = append(out, Candidate{Words: ordered, Score: r.score})
 		if !ro.AllowRepeat {
+			pw := make([]string, 0, 4)
 			for _, x := range w {
 				picked[normalize.Key(x)] = true
-				if ro.UsedRoots != nil {
+				pw = append(pw, x)
+			}
+			pickedWords = append(pickedWords, pw)
+			if ro.MaxSharedWords == 0 {
+				for _, x := range w {
 					pickedRoots[rootOf(x)] = true
 				}
 			}
@@ -251,6 +273,34 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// topN returns the indexes of the n largest values of d, largest first.
+// Linear scan with running insertion (deterministic: earlier index wins
+// ties); n is small, so a full sort would only dominate runtime.
+func topN(d []float64, n int) []int {
+	if n > len(d) {
+		n = len(d)
+	}
+	idx := make([]int, 0, n)
+	for t, v := range d {
+		if len(idx) < n {
+			idx = append(idx, t)
+			// insertion into the (short) running list
+			for i := len(idx) - 1; i > 0 && v > d[idx[i-1]]; i-- {
+				idx[i], idx[i-1] = idx[i-1], idx[i]
+			}
+			continue
+		}
+		if v <= d[idx[n-1]] {
+			continue
+		}
+		idx[n-1] = t
+		for i := n - 1; i > 0 && d[idx[i]] > d[idx[i-1]]; i-- {
+			idx[i], idx[i-1] = idx[i-1], idx[i]
+		}
+	}
+	return idx
 }
 
 // rootOf is the cross-block root key (first four letters, lowercased):

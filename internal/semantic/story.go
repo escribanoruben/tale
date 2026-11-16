@@ -17,11 +17,12 @@ type Story struct {
 // pools holds the per-block candidate pools (from Rank, one per block in
 // block order). It builds a layered DAG — node = candidate phrase, edge =
 // chain bonus between consecutive blocks (subject of the next phrase vs
-// the previous phrase's nouns), closure edge from the final block's
-// object noun back to the first phrase's subject noun — and returns the
-// top-m complete stories by exact dynamic programming (k-best Viterbi,
-// one pass per first-block candidate so the closure is part of the
-// optimum, not an afterthought). Deterministic.
+// the previous phrase's nouns) — and runs an exact k-best dynamic
+// program over the layers, then adds the closure bonus (final block's
+// object noun back to the first phrase's subject) to the reconstructed
+// paths and re-ranks. With the per-first-node structure folded into a
+// single pass this scales O(K^2) in the pool size, which lets the pools
+// be wide (hundreds of nodes) without runtime blow-ups. Deterministic.
 func Stories(e *worddata.Embeddings, pools [][]Candidate, roles [4]int, m int) []Story {
 	if m <= 0 {
 		m = 1
@@ -54,7 +55,7 @@ func Stories(e *worddata.Embeddings, pools [][]Candidate, roles [4]int, m int) [
 		}
 		return s
 	}
-	// Per-node vectors for the chain/closure anchors.
+	// Per-node anchor vectors.
 	n1 := make([][][]float32, n)
 	n2 := make([][][]float32, n)
 	for i := range pools {
@@ -76,7 +77,6 @@ func Stories(e *worddata.Embeddings, pools [][]Candidate, roles [4]int, m int) [
 	}
 
 	chain := func(i, a, b int) float64 {
-		// subject of block i+1 vs the previous phrase's nouns
 		d1 := dot(n1[i+1][b], n1[i][a])
 		d2 := dot(n1[i+1][b], n2[i][a])
 		return DefaultLinkWeight * max(d1, d2)
@@ -87,56 +87,61 @@ func Stories(e *worddata.Embeddings, pools [][]Candidate, roles [4]int, m int) [
 		prev     int
 		prevRank int
 	}
-	type finish struct {
+	const keepPerNode = 64 // k-best paths kept per node
+	layers := make([][][]step, n)
+	layers[0] = make([][]step, len(pools[0]))
+	for j := range pools[0] {
+		layers[0][j] = []step{{score: pools[0][j].Score}}
+	}
+	for i := 1; i < n; i++ {
+		layers[i] = make([][]step, len(pools[i]))
+		for j := range pools[i] {
+			var cands []step
+			for a := range pools[i-1] {
+				lw := chain(i-1, a, j)
+				for r, st := range layers[i-1][a] {
+					cands = append(cands, step{st.score + lw + pools[i][j].Score, a, r})
+				}
+			}
+			sort.SliceStable(cands, func(x, y int) bool { return cands[x].score > cands[y].score })
+			if len(cands) > keepPerNode {
+				cands = cands[:keepPerNode]
+			}
+			layers[i][j] = cands
+		}
+	}
+
+	// Final nodes x ranks, closed back to their first phrase.
+	type fin struct {
 		score float64
 		node  int
 		rank  int
 	}
+	var finals []fin
+	for j := range pools[n-1] {
+		for r := range layers[n-1][j] {
+			finals = append(finals, fin{layers[n-1][j][r].score, j, r})
+		}
+	}
+	sort.SliceStable(finals, func(x, y int) bool { return finals[x].score > finals[y].score })
+	const backtrackBudget = 2000
+	if len(finals) > backtrackBudget {
+		finals = finals[:backtrackBudget]
+	}
 
 	var all []Story
-	// One pass per first-block candidate; the pass pins the first node,
-	// so backtracking always yields a story that actually starts there.
-	for f := range pools[0] {
-		layers := make([][][]step, n)
-		layers[0] = make([][]step, len(pools[0]))
-		layers[0][f] = []step{{score: pools[0][f].Score}}
-		for i := 1; i < n; i++ {
-			layers[i] = make([][]step, len(pools[i]))
-			for j := range pools[i] {
-				var cands []step
-				for a := range pools[i-1] {
-					lw := chain(i-1, a, j)
-					for r, st := range layers[i-1][a] {
-						cands = append(cands, step{st.score + lw + pools[i][j].Score, a, r})
-					}
-				}
-				sort.SliceStable(cands, func(x, y int) bool { return cands[x].score > cands[y].score })
-				if len(cands) > m {
-					cands = cands[:m]
-				}
-				layers[i][j] = cands
-			}
+	for _, f := range finals {
+		phrases := make([][]string, n)
+		node, rank := f.node, f.rank
+		for i := n - 1; i >= 1; i-- {
+			phrases[i] = pools[i][node].Words
+			st := layers[i][node][rank]
+			node, rank = st.prev, st.prevRank
 		}
-		var finals []finish
-		for j := range pools[n-1] {
-			clo := DefaultLinkWeight * dot(n2[n-1][j], n1[0][f])
-			for r, st := range layers[n-1][j] {
-				finals = append(finals, finish{st.score + clo, j, r})
-			}
-		}
-		sort.SliceStable(finals, func(x, y int) bool { return finals[x].score > finals[y].score })
-
-		for _, pf := range finals {
-			phrases := make([][]string, n)
-			node, rank := pf.node, pf.rank
-			for i := n - 1; i >= 1; i-- {
-				phrases[i] = pools[i][node].Words
-				st := layers[i][node][rank]
-				node, rank = st.prev, st.prevRank
-			}
-			phrases[0] = pools[0][f].Words
-			all = append(all, Story{Phrases: phrases, Score: pf.score})
-		}
+		phrases[0] = pools[0][node].Words
+		// closure: the story's last object noun back to its opening subject
+		score := f.score + DefaultLinkWeight*dot(n2[n-1][f.node], n1[0][node])
+		all = append(all, Story{Phrases: phrases, Score: score})
 	}
 
 	sort.SliceStable(all, func(x, y int) bool { return all[x].Score > all[y].Score })

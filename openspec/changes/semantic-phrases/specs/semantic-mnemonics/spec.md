@@ -35,7 +35,7 @@ The system SHALL score candidate phrases as `cos(noun1, verb) + cos(verb, noun2)
 
 ### Requirement: Whole-story optimization
 
-Instead of freezing each phrase sequentially, semantic ranking SHALL build a layered graph of feasible options — one candidate pool per block (top-K diverse phrases), chain edges between consecutive blocks, and a closure edge from the final block's object noun back to the first phrase's subject noun — and SHALL select the best complete stories by exact dynamic programming (k-best Viterbi), returning the best story by default and keeping the ranked alternatives for interactive choice. Chain and closure use the anchored link bonuses (weight 2.0). The result SHALL avoid repeated words across blocks, demoting (and then filtering) stories that reuse words or roots.
+Instead of freezing each phrase sequentially, semantic ranking SHALL build a layered graph of feasible options — one candidate pool per block (top-K diverse phrases, allowing the same noun in several scene variants), chain edges between consecutive blocks, and a closure edge from the final block's object noun back to the first phrase's subject noun — and SHALL select the best complete stories by exact dynamic programming (k-best Viterbi), returning the best story by default and keeping the ranked alternatives for interactive choice. Chain and closure use the anchored link bonuses (weight 2.0). Cross-block word repetition is allowed — a repeated word reads as a refrain and can aid recall — though within a single phrase repeated roots are rejected as mush.
 
 #### Scenario: Phrases chain into a story
 
@@ -52,10 +52,10 @@ Instead of freezing each phrase sequentially, semantic ranking SHALL build a lay
 - **WHEN** a middle block has a candidate that chains better with both neighbours than the locally best phrase
 - **THEN** the DP selects it over the frozen-greedy combination
 
-#### Scenario: No repeated words across blocks
+#### Scenario: Refrains are allowed
 
-- **WHEN** the ranked stories contain word or root repetitions
-- **THEN** stories without repetitions are preferred; a repetition penalty re-ranks before filtering
+- **WHEN** the best story repeats a word across blocks
+- **THEN** it is kept: repetition reads as a refrain, not an error
 
 ### Requirement: Exact top-K candidate pool
 
