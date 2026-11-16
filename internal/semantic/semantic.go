@@ -67,6 +67,10 @@ type RankOptions struct {
 	MaxSharedWords int
 	// CombosPerSubject overrides topCombosPerSubject when > 0.
 	CombosPerSubject int
+	// AdjWeight / VerbWeight scale the anchored edges (nouns -> verbs ->
+	// adjectives priority). 0 keeps the defaults.
+	AdjWeight  float64
+	VerbWeight float64
 }
 
 // DefaultLinkWeight pairs with the offline experiment: strong enough to
@@ -78,6 +82,15 @@ const DefaultLinkWeight = 2.0
 // abstract top-1 phrases from 23% to 3% of blocks at negligible quality
 // cost.
 const ImageabilityPenalty = 0.25
+
+// Role hierarchy (experiment "nouns -> verbs -> adjectives"): the noun
+// spine already dominates at story level (chain/closure edges are
+// noun-only, weight 2.0); within a block the verb edges (the action)
+// weigh more than the adjective edge (the decoration).
+const (
+	DefaultAdjWeight  = 0.5
+	DefaultVerbWeight = 1.0
+)
 
 // Band scores a noun-pair cosine: 0 inside the sweet spot, penalties outside.
 func Band(cos float64) float64 {
@@ -187,7 +200,14 @@ func Rank(e *worddata.Embeddings, lists [][]string, roles [4]int, ro RankOptions
 		}
 		for _, t := range topN(d, combos) {
 			j, o := t/len(obj), t%len(obj)
-			score := (mAdj[i][bestAdj] + d[t]) / 3
+			wa, wv := ro.AdjWeight, ro.VerbWeight
+			if wa <= 0 {
+				wa = DefaultAdjWeight
+			}
+			if wv <= 0 {
+				wv = DefaultVerbWeight
+			}
+			score := (wa*mAdj[i][bestAdj] + wv*(mSVerb[i][j]+mVObj[j][o])) / (wa + 2*wv)
 			// imageability: concrete scenes beat abstract soup
 			if len(ro.LowImageability) > 0 {
 				for _, w := range []string{words[Subject][i], words[Verb][j], words[Object][o], words[Adjective][bestAdj]} {

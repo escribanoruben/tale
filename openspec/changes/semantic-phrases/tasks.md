@@ -23,6 +23,7 @@
 - [x] 3.8 Refrains allowed: cross-block word repetition no longer penalized or filtered (user decision — repetition aids recall); within-phrase root repeats still rejected
 - [x] 3.6 Imageability penalty: curated `imageability.txt` per language (abstract nouns + stative verbs), −0.25 per hit on the anchored mean; abstract top-1 phrases 23 % → 3 % in the ES experiment
 - [x] 3.7 Spanish gender agreement by embedding: derived feminine adjective forms added to the lists and `prepare-wordlists` (1,295 entries); the anchored cos(noun1, adjective) edge selects the agreeing form (verified 15/15 pairs); regeneration keeps them
+- [x] 3.9 Role hierarchy weights: verb edges 1.0, adjective edge 0.5 (nouns already dominate at story level via chain/closure weight 2.0); religious/ethnic identity nouns purged (judío, hebreo, musulmán, cristiano... ES + EN counterparts)
 
 ## 4. Template change (builtin languages)
 
