@@ -7,6 +7,7 @@ import (
 
 	"github.com/escribanoruben/tale/internal/phrase"
 	"github.com/escribanoruben/tale/internal/profile"
+	"github.com/escribanoruben/tale/internal/settings"
 )
 
 func runGenerate(args []string) {
@@ -24,6 +25,9 @@ func runGenerate(args []string) {
 	opts := phrase.Options{
 		AllowRepeat:          false,
 		AllowAdjacentRepeats: cfg.AllowAdjacentRepeats,
+	}
+	if base, _ := settings.Load(); base.SemanticEnabled() {
+		opts.Semantic = phrase.SemanticAvailable(p, dict)
 	}
 	pass, blocks, err := phrase.GeneratePassword(p, dict, opts)
 	if err != nil {

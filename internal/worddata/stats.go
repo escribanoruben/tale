@@ -9,9 +9,9 @@ import (
 )
 
 var posFiles = map[string]string{
-	"noun":       "nouns.tsv",
-	"adjective":  "adjectives.tsv",
-	"verb":       "verbs.tsv",
+	"noun":      "nouns.tsv",
+	"adjective": "adjectives.tsv",
+	"verb":      "verbs.tsv",
 }
 
 var languageLabels = map[string]string{
@@ -21,16 +21,16 @@ var languageLabels = map[string]string{
 
 // LanguageStats holds aggregated counts for one language.
 type LanguageStats struct {
-	Code         string
-	Label        string
-	Alphabet     string
-	Letters      []string
-	TotalsByPOS  map[string]int
-	Buckets      map[string]map[string]int
-	TotalWords   int
-	MinBucket    int
-	MaxBucket    int
-	AvgBucket    float64
+	Code        string
+	Label       string
+	Alphabet    string
+	Letters     []string
+	TotalsByPOS map[string]int
+	Buckets     map[string]map[string]int
+	TotalWords  int
+	MinBucket   int
+	MaxBucket   int
+	AvgBucket   float64
 }
 
 // Report is the full statistics report for embedded word data.

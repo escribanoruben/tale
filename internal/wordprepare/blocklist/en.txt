@@ -7,14 +7,12 @@ stupid
 dumb
 retarded
 lame
-
 # Category 5: sexual content / explicit imagery
 aroused
 erotic
 naked
 nude
 obscene
-
 # Category 6: killing / death / morbidity
 kill
 killed
@@ -32,7 +30,6 @@ rapist
 corpse
 torture
 hanging
-
 # Category 7: violence / gore
 brutal
 cruel
@@ -52,7 +49,6 @@ bomb
 bombed
 weapons
 gun
-
 # Category 8: hate / discrimination
 hate
 hated
@@ -63,7 +59,6 @@ nazis
 abuse
 victimised
 victimized
-
 # Category 9: disease dread / disgust
 cancer
 tumor
@@ -71,3 +66,33 @@ hiv
 vomiting
 toxic
 venomous
+# Category 10: bodily functions (unpleasant imagery)
+urine
+orina
+orinar
+orgasm
+orgasms
+orgasmo
+detest
+dreadful
+horrid
+horror
+vile
+negro
+negroes
+sex
+vagina
+kinda
+that
+what
+which
+this
+these
+those
+there
+here
+then
+when
+where
+why
+how

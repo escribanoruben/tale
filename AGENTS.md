@@ -20,7 +20,8 @@ openspec validate <change-id>
 openspec status --change <change-id>
 ```
 
-Word-list regeneration (maintainers, needs network): `make wordlists`.
+Word-list regeneration (maintainers, needs network): `make wordlists`. Semantic
+embedding assets (maintainers, needs network): `make embeddings`.
 
 ## Conventions
 

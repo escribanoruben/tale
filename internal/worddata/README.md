@@ -1,6 +1,7 @@
 # Word list data
 
-Curated noun, adjective, and verb lists embedded in the `tale` binary via `go:embed`.
+Curated noun, adjective, and verb lists embedded in the `tale` binary via `go:embed`,
+plus int8-quantized semantic vectors per language (`embeddings.bin`).
 
 ## Layout
 
@@ -66,6 +67,26 @@ go run ./cmd/prepare-wordlists   # or: make wordlists
 ```
 
 Produces `data/{en,es}/…` and release zips in `dist/data-{en,es}.zip`.
+
+## Semantic embeddings
+
+`{en,es}/embeddings.bin` hold one int8-quantized 300-dim vector per embedded
+word, used by `internal/semantic` to rank mnemonic phrases (see
+`openspec/changes/semantic-phrases/`). Format: `TEMB` magic + version +
+dim + word table + int8 rows + per-vector float32 scales; vectors are
+L2-normalized at load time.
+
+Regenerate (maintainers, needs network; `VECS=dir` reuses downloaded
+`cc.{lang}.300.vec.gz` files):
+
+```bash
+make embeddings            # downloads fastText cc.{en,es}.300.vec.gz
+make embeddings VECS=dir   # reuses pre-downloaded copies
+```
+
+Words without vectors (rare terms) are skipped by semantic ranking and
+reported by the tool. Languages without an embeddings file silently fall
+back to frequency-based scoring.
 
 Use `tale stats` to inspect word counts per language, letter, and part of speech.
 
