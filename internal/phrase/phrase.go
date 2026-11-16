@@ -11,14 +11,19 @@ import (
 	"github.com/escribanoruben/tale/internal/normalize"
 	"github.com/escribanoruben/tale/internal/password"
 	"github.com/escribanoruben/tale/internal/profile"
+	"github.com/escribanoruben/tale/internal/semantic"
 )
 
 const searchTopK = 20
 
 // Options controls phrase selection behavior.
 type Options struct {
-	AllowRepeat            bool
-	AllowAdjacentRepeats   bool
+	AllowRepeat          bool
+	AllowAdjacentRepeats bool
+	// Semantic enables embedding-based ranking (when the language ships
+	// vectors); languages or templates without support fall back to the
+	// frequency-based scoring.
+	Semantic bool
 }
 
 // BlockResult holds one mnemonic phrase for a password block.
@@ -71,6 +76,14 @@ func ForPassword(p profile.Profile, pass string, dict *dictionary.Dictionary, op
 		return nil, fmt.Errorf("phrase template has %d slots, block size is %d", len(p.PhraseTemplate), p.BlockSize)
 	}
 
+	if opts.Semantic {
+		// Whole-story optimization: pools per block + exact k-best DP.
+		if results, err := semanticResults(p, blocks, dict, opts); err == nil {
+			return results, nil
+		}
+		// fall through to the per-block frequency path
+	}
+
 	used := make(map[string]bool)
 	results := make([]BlockResult, 0, len(blocks))
 	for _, block := range blocks {
@@ -86,6 +99,25 @@ func ForPassword(p profile.Profile, pass string, dict *dictionary.Dictionary, op
 		results = append(results, BlockResult{Letters: block, Words: words})
 	}
 	return results, nil
+}
+
+// semanticResults builds the semantic story results for fixed blocks.
+func semanticResults(p profile.Profile, blocks []string, dict *dictionary.Dictionary, opts Options) ([]BlockResult, error) {
+	stories, err := SemanticStories(p, blocks, dict, opts, semanticStoriesM)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]BlockResult, 0, len(blocks))
+	for i, block := range blocks {
+		results = append(results, BlockResult{Letters: block, Words: stories[0][i]})
+	}
+	return results, nil
+}
+
+// linkNounsFor returns the chain targets for a block: the previous
+// phrase's nouns.
+func linkNounsFor(prevNouns []string) []string {
+	return prevNouns
 }
 
 // HasCandidate reports whether at least one valid phrase exists for a block.
@@ -130,6 +162,13 @@ func GeneratePassword(p profile.Profile, dict *dictionary.Dictionary, opts Optio
 		return "", nil, fmt.Errorf("password length %d not divisible by block size %d", p.PasswordLength, p.BlockSize)
 	}
 
+	if opts.Semantic {
+		if pass, results, err := generatePasswordSemantic(p, dict, opts, numBlocks); err == nil {
+			return pass, results, nil
+		}
+		// fall through to the per-block frequency path
+	}
+
 	used := make(map[string]bool)
 	blockLetters := make([]string, 0, numBlocks)
 	results := make([]BlockResult, 0, numBlocks)
@@ -149,12 +188,11 @@ func GeneratePassword(p profile.Profile, dict *dictionary.Dictionary, opts Optio
 			if err != nil || !ok {
 				continue
 			}
-			candidates, err := Best(p, b, dict, used, opts)
+			words, err = Best(p, b, dict, used, opts)
 			if err != nil {
 				continue
 			}
 			block = b
-			words = candidates
 			found = true
 			break
 		}
@@ -172,6 +210,69 @@ func GeneratePassword(p profile.Profile, dict *dictionary.Dictionary, opts Optio
 	}
 
 	return strings.Join(blockLetters, ""), results, nil
+}
+
+// generatePasswordSemantic draws block letters and then optimizes the
+// whole narrative over their pools (exact k-best DP). Falls back to the
+// per-block frequency path through the caller when it fails.
+func generatePasswordSemantic(p profile.Profile, dict *dictionary.Dictionary, opts Options, numBlocks int) (string, []BlockResult, error) {
+	pwOpts := password.Options{PreventAdjacentRepeats: !opts.AllowAdjacentRepeats}
+	blockLetters := make([]string, 0, numBlocks)
+	var prev rune
+	for range numBlocks {
+		var block string
+		found := false
+		for attempt := 0; attempt < 10_000; attempt++ {
+			b, err := password.GenerateAfter(p.Alphabet, p.BlockSize, prev, pwOpts)
+			if err != nil {
+				return "", nil, err
+			}
+			ok, err := HasCandidate(p, b, dict, nil, opts)
+			if err != nil || !ok {
+				continue
+			}
+			block = b
+			found = true
+			break
+		}
+		if !found {
+			return "", nil, fmt.Errorf("could not generate valid block after many attempts")
+		}
+		prev = rune(block[len(block)-1])
+		blockLetters = append(blockLetters, block)
+	}
+
+	stories, err := SemanticStories(p, blockLetters, dict, opts, semanticStoriesM)
+	if err != nil {
+		return "", nil, err
+	}
+	results := make([]BlockResult, 0, numBlocks)
+	for i, block := range blockLetters {
+		results = append(results, BlockResult{Letters: block, Words: stories[0][i]})
+	}
+	return strings.Join(blockLetters, ""), results, nil
+}
+
+// phraseNouns returns the words sitting in the template's noun slots.
+func phraseNouns(p profile.Profile, words []string) []string {
+	var nouns []string
+	for i, pos := range p.PhraseTemplate {
+		if pos == "noun" && i < len(words) {
+			nouns = append(nouns, words[i])
+		}
+	}
+	return nouns
+}
+
+// phraseSubject returns the subject noun of a picked phrase (the noun
+// adjacent to the adjective, per the anchored roles), or "" when the
+// template cannot express it.
+func phraseSubject(p profile.Profile, words []string) string {
+	roles, ok := semanticRoles(p.PhraseTemplate)
+	if !ok || roles[semantic.Subject] >= len(words) {
+		return ""
+	}
+	return words[roles[semantic.Subject]]
 }
 
 func slotLists(p profile.Profile, block string, dict *dictionary.Dictionary, used map[string]bool, opts Options) ([][]string, []*dictionary.Bucket, error) {

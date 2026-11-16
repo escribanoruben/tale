@@ -10,7 +10,7 @@ LDFLAGS := -s -w \
 	-X main.commit=$(COMMIT) \
 	-X main.date=$(DATE)
 
-.PHONY: help build run test wordlists stats clean install next-version release-plan release
+.PHONY: help build run test wordlists embeddings stats clean install next-version release-plan release
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z0-9_-]+:.*##' $(MAKEFILE_LIST) | \
@@ -27,6 +27,9 @@ test: ## Run all tests
 
 wordlists: ## Regenerate curated word lists (requires network)
 	$(GO) run ./cmd/prepare-wordlists
+
+embeddings: ## Regenerate semantic embedding assets (requires network; VECS=dir reuses cc.*.vec.gz)
+	$(GO) run ./cmd/prepare-embeddings $(if $(VECS),-vec-dir $(VECS),)
 
 stats: build ## Show embedded dictionary statistics
 	./$(BINARY) stats

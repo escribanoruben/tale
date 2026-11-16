@@ -16,17 +16,46 @@ The system SHALL embed, per builtin language, a semantic vector for every word i
 
 ### Requirement: Anchored phrase scoring
 
-The system SHALL score candidate phrases as `cos(noun1, verb) + cos(verb, noun2) + cos(adjective, noun1)` (mean), where slot roles derive from the language's phrase template, plus a distance-band term on `cos(noun1, noun2)` that penalizes near-synonym pairs (cosine above 0.45) and gently discourages unrelated pairs (below 0.05).
+The system SHALL score candidate phrases as `cos(noun1, verb) + cos(verb, noun2) + cos(adjective, noun1)` (mean), where slot roles derive from the language's phrase template, plus a distance-band term on `cos(noun1, noun2)` that penalizes near-synonym pairs (cosine above 0.45) and gently discourages unrelated pairs (below 0.05), and a small imageability penalty per low-imageability word (curated abstract nouns and stative verbs) so concrete scenes outrank abstract ones.
 
 #### Scenario: Near-synonym mush is rejected
 
 - **WHEN** the highest-frequency words of a block form a near-synonym noun pair
 - **THEN** the distance band demotes that candidate relative to a scene with related-but-distinct nouns
 
+#### Scenario: Concrete scenes outrank abstract ones
+
+- **WHEN** two candidates score nearly the same and one uses abstract vocabulary
+- **THEN** the imageability penalty promotes the concrete scene
+
 #### Scenario: Deterministic ranking
 
 - **WHEN** the same password block is scored twice with the same embedded data
 - **THEN** the ranked candidate pool is identical
+
+### Requirement: Whole-story optimization
+
+Instead of freezing each phrase sequentially, semantic ranking SHALL build a layered graph of feasible options — one candidate pool per block (top-K diverse phrases), chain edges between consecutive blocks, and a closure edge from the final block's object noun back to the first phrase's subject noun — and SHALL select the best complete stories by exact dynamic programming (k-best Viterbi), returning the best story by default and keeping the ranked alternatives for interactive choice. Chain and closure use the anchored link bonuses (weight 2.0). The result SHALL avoid repeated words across blocks, demoting (and then filtering) stories that reuse words or roots.
+
+#### Scenario: Phrases chain into a story
+
+- **WHEN** a five-block password is generated with semantic ranking
+- **THEN** each phrase after the first has a subject noun semantically related to a noun of the previous phrase
+
+#### Scenario: Story closes the loop
+
+- **WHEN** the final block is ranked
+- **THEN** its object noun is steered toward the first phrase's subject noun as part of the global optimum
+
+#### Scenario: Global optimum beats greedy freezing
+
+- **WHEN** a middle block has a candidate that chains better with both neighbours than the locally best phrase
+- **THEN** the DP selects it over the frozen-greedy combination
+
+#### Scenario: No repeated words across blocks
+
+- **WHEN** the ranked stories contain word or root repetitions
+- **THEN** stories without repetitions are preferred; a repetition penalty re-ranks before filtering
 
 ### Requirement: Exact top-K candidate pool
 

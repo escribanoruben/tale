@@ -116,3 +116,27 @@ drogar
 # Category 9: insultos fuertes
 retardado
 estupidez
+
+# Category 10: funciones corporales (imágenes desagradables)
+urina
+orina
+orinar
+orgasmo
+orgasm
+orgasms
+odio
+odiar
+odioso
+horror
+horroroso
+horrendo
+espantoso
+espanto
+perverso
+perversidad
+negro
+negra
+negros
+negras
+sexo
+vagina

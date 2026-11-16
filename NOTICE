@@ -39,3 +39,17 @@ Changes made for tale: lemma selection, frequency filtering, diminutive
 exclusion, accent normalization, and re-bucketing by initial letter and part
 of speech. The curated files in internal/worddata/es/ are distributed under
 CC-BY-SA 3.0.
+
+Semantic embeddings (internal/worddata/{en,es}/embeddings.bin)
+--------------------------------------------------------------
+
+Quantized vectors for the words above, extracted from fastText Common Crawl
+vectors and stored in tale's own binary format.
+
+- Source: https://fasttext.cc/ (cc.en.300.vec, cc.es.300.vec)
+- License: Creative Commons Attribution-ShareAlike 3.0 Unported (CC-BY-SA 3.0)
+- License URL: https://creativecommons.org/licenses/by-sa/3.0/
+
+Changes made for tale: restricted to embedded vocabulary words, int8
+quantization with per-vector scale, L2 normalization at load time. Regenerate
+with `make embeddings` (maintainers, requires network).

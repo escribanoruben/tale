@@ -17,6 +17,9 @@ type Settings struct {
 	Language             string `toml:"language"`
 	Phrases              int    `toml:"phrases"`
 	AllowAdjacentRepeats bool   `toml:"allow_adjacent_repeats"`
+	// Semantic enables embedding-based mnemonic ranking; nil keeps the
+	// default (on for builtin languages that ship vectors).
+	Semantic *bool `toml:"semantic"`
 }
 
 // Default returns built-in defaults (language unset until the user chooses).
@@ -38,6 +41,11 @@ func (s Settings) PhrasesOr(fallback int) int {
 		return fallback
 	}
 	return defaultPhrases
+}
+
+// SemanticEnabled reports whether semantic ranking is on (default: yes).
+func (s Settings) SemanticEnabled() bool {
+	return s.Semantic == nil || *s.Semantic
 }
 
 // Resolve fills unset fields for batch or interactive use.
