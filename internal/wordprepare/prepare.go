@@ -24,9 +24,9 @@ var topLetterCountByLanguage = map[string]int{
 }
 
 var posFiles = map[string]string{
-	"noun":       "nouns.tsv",
-	"adjective":  "adjectives.tsv",
-	"verb":       "verbs.tsv",
+	"noun":      "nouns.tsv",
+	"adjective": "adjectives.tsv",
+	"verb":      "verbs.tsv",
 }
 
 var posOrder = []string{"noun", "adjective", "verb"}
@@ -85,7 +85,7 @@ func Prepare(opts Options) ([]LanguageResult, []string, error) {
 		letters := computeTopLetters(buckets, topN)
 		fmt.Printf("  top %d initials by corpus weight: %s\n", topN, strings.Join(letters, ""))
 
-		trimmed := trimToBucketLimits(buckets, letters)
+		trimmed := trimToBucketLimits(buckets, letters, item.language)
 		counts := bucketCounts(trimmed, letters)
 
 		if err := writeLanguageLayout(dataDir, item.language, letters, trimmed); err != nil {
@@ -175,7 +175,7 @@ func computeTopLetters(buckets map[string][]wordEntry, n int) []string {
 	return letters
 }
 
-func trimToBucketLimits(buckets map[string][]wordEntry, letters []string) map[bucketKey][]wordEntry {
+func trimToBucketLimits(buckets map[string][]wordEntry, letters []string, language string) map[bucketKey][]wordEntry {
 	letterSet := make(map[string]struct{}, len(letters))
 	for _, letter := range letters {
 		letterSet[letter] = struct{}{}
@@ -202,6 +202,13 @@ func trimToBucketLimits(buckets map[string][]wordEntry, letters []string) map[bu
 			})
 			if len(items) > maxWordsPerBucket {
 				items = items[:maxWordsPerBucket]
+			}
+			// Spanish adjective buckets also carry the derived feminine
+			// forms: the embedding-space gender agreement needs both
+			// forms as first-class candidates (they do not count
+			// against the cap — same lexeme as the masculine entry).
+			if pos == "adjective" && language == "es" {
+				items = appendSpanishFeminines(items)
 			}
 			trimmed[key] = items
 		}
@@ -430,4 +437,42 @@ func zipDirectory(archivePath, sourceDir, baseName string) error {
 		_, err = io.Copy(writer, file)
 		return err
 	})
+}
+
+// appendSpanishFeminines derives feminine adjective forms (the embedding
+// space encodes gender agreement, so both forms must be candidates).
+// Feminines do not count against the bucket cap: they are alternates of
+// the same lexeme as the masculine entry and inherit its rank.
+func appendSpanishFeminines(items []wordEntry) []wordEntry {
+	seen := make(map[string]bool, len(items))
+	for _, it := range items {
+		seen[it.word] = true
+	}
+	out := append([]wordEntry(nil), items...)
+	for _, it := range items {
+		fem := spanishFeminine(it.word)
+		if fem == "" || seen[fem] {
+			continue
+		}
+		seen[fem] = true
+		out = append(out, wordEntry{word: fem, pos: it.pos, rank: it.rank, weight: it.weight})
+	}
+	return out
+}
+
+// spanishFeminine derives the feminine form of a Spanish adjective, or
+// "" for invariable endings. Only productive suffixes are handled:
+// -o -> -a, and stressed consonant endings that take -a (-dor, -ón,
+// -án, -ete, -ote, -ín). Endings like -e, -l, -z, -ble and the -or
+// invariables (mejor, superior) are skipped.
+func spanishFeminine(adj string) string {
+	switch {
+	case strings.HasSuffix(adj, "o") && !strings.HasSuffix(adj, "ao"):
+		return adj[:len(adj)-1] + "a"
+	case strings.HasSuffix(adj, "dor"), strings.HasSuffix(adj, "ón"),
+		strings.HasSuffix(adj, "án"), strings.HasSuffix(adj, "ete"),
+		strings.HasSuffix(adj, "ote"), strings.HasSuffix(adj, "ín"):
+		return adj + "a"
+	}
+	return ""
 }

@@ -143,3 +143,7 @@ significar
 suponer
 tener
 valer
+soler
+suceder
+sobrevenir
+acontecer

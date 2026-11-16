@@ -148,9 +148,9 @@ func spanishIsCommonEnough(word string, weight, rank int) bool {
 
 func loadEnglish() (map[string][]wordEntry, error) {
 	buckets := map[string][]wordEntry{
-		"noun":       {},
-		"adjective":  {},
-		"verb":       {},
+		"noun":      {},
+		"adjective": {},
+		"verb":      {},
 	}
 	posNames := map[string]string{
 		"nouns":      "noun",
@@ -210,9 +210,9 @@ func loadEnglish() (map[string][]wordEntry, error) {
 
 func loadSpanish() (map[string][]wordEntry, error) {
 	buckets := map[string][]wordEntry{
-		"noun":       {},
-		"adjective":  {},
-		"verb":       {},
+		"noun":      {},
+		"adjective": {},
+		"verb":      {},
 	}
 
 	text, err := download(spanishFrequencyCSV)

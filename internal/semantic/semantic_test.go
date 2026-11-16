@@ -276,3 +276,43 @@ func TestBand(t *testing.T) {
 		t.Fatalf("synonym penalty %.3f should exceed unrelated penalty %.3f", -Band(0.6), -Band(0.0))
 	}
 }
+
+func TestRankGenderAgreementByEmbedding(t *testing.T) {
+	// Feminine forms live in the adjective list as first-class entries;
+	// the embedding-space gender signal makes the anchored score pick
+	// the agreeing form (no grammar code needed).
+	words := []string{"sangre", "hogar", "quemado", "quemada", "arder", "casa"}
+	rows := [][]float32{
+		{0, 1, 0},     // sangre (feminine, co-occurs with quemada)
+		{1, 0, 0},     // hogar (masculine, co-occurs with quemado)
+		{0.9, 0.2, 0}, // quemado ~ hogar
+		{0.2, 0.9, 0}, // quemada ~ sangre
+		{0.5, 0.5, 0}, // arder
+		{0, 0.9, 0.1}, // casa ~ sangre axis
+	}
+	data, err := worddata.EncodeEmbeddings(3, words, rows)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, err := worddata.ParseEmbeddings(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lists := [][]string{
+		{"sangre", "hogar"}, {"quemado", "quemada"}, {"arder"}, {"casa"},
+	}
+	pool := Rank(e, lists, roles(), RankOptions{K: 2})
+	if len(pool) == 0 {
+		t.Fatal("empty pool")
+	}
+	for _, c := range pool {
+		noun, adj := c.Words[0], c.Words[1]
+		want := "quemada"
+		if noun == "hogar" {
+			want = "quemado"
+		}
+		if adj != want {
+			t.Fatalf("noun %q should take %q, got %q", noun, want, adj)
+		}
+	}
+}

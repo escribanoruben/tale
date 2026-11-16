@@ -52,6 +52,7 @@ go build -o tale ./cmd/tale
 - Exclude diminutives (`-ito`, `-ita`, `-illo`, …)
 - Minimum corpus frequency threshold for inclusion
 - Accented vowels at word start map to base vowel (`árbol` → `a`); no `ñ`-initial words
+- **Adjectives carry derived feminine forms** (`quemado` → `quemada`): fastText vectors encode gender agreement, so the semantic scorer pairs adjectives with the noun's gender without any grammar code. Feminines inherit the masculine entry's rank and do not count against the per-bucket cap.
 
 ## Alphabets (in profiles)
 

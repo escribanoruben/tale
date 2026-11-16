@@ -21,6 +21,7 @@
 - [x] 3.4 Template constants: slot roles (n1, verb, n2, adj) derived from `PhraseTemplate` so scoring follows the profile
 - [x] 3.5 Whole-story optimization: per-block pools → layered DAG → exact k-best DP with chain edges (subject vs previous nouns, weight 2.0) and closure edge (final object vs first subject); repetition penalty + filter across blocks
 - [x] 3.6 Imageability penalty: curated `imageability.txt` per language (abstract nouns + stative verbs), −0.25 per hit on the anchored mean; abstract top-1 phrases 23 % → 3 % in the ES experiment
+- [x] 3.7 Spanish gender agreement by embedding: derived feminine adjective forms added to the lists and `prepare-wordlists` (1,295 entries); the anchored cos(noun1, adjective) edge selects the agreeing form (verified 15/15 pairs); regeneration keeps them
 
 ## 4. Template change (builtin languages)
 

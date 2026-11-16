@@ -133,3 +133,7 @@ keep
 matter
 mean
 remain
+befall
+befit
+suffice
+abound
