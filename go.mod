@@ -1,13 +1,13 @@
 module github.com/escribanoruben/tale
 
-go 1.24.2
+go 1.26.0
 
 require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
-	golang.org/x/text v0.28.0
+	golang.org/x/text v0.44.0
 )
 
 require (
