@@ -218,8 +218,11 @@ func Rank(e *worddata.Embeddings, lists [][]string, roles [4]int, ro RankOptions
 					distinct = false
 					break
 				}
+				// mush guard: a candidate never repeats a root within
+				// itself ("entrevista...entrevistar"), whatever the
+				// pool's diversity mode
 				for b := a + 1; b < 4; b++ {
-					if w[a] == w[b] || (ro.MaxSharedWords == 0 && rootOf(w[a]) == rootOf(w[b])) {
+					if w[a] == w[b] || rootOf(w[a]) == rootOf(w[b]) {
 						distinct = false
 						break
 					}
