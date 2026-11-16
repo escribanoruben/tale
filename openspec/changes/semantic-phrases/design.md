@@ -39,6 +39,6 @@ Key findings:
 ## Risks / Trade-offs
 
 - **Binary size** +2-3 MB for both languages — accepted; alternative (dropping dims to 128) loses little ranking quality but complicates the pipeline for marginal savings; revisit if size matters.
-- **Uncomfortable words** surface more often under semantic ranking (frequency-blind): "violador fornicar sexo homicida". Handled by user cycling in the TUI; a curated exclusion list is out of scope for v1 but noted as a cheap follow-up.
+- **Uncomfortable words** surface more often under semantic ranking (frequency-blind): "violador fornicar sexo homicida". Handled in scope: the suitability curation purges sexual aggression, gore, morbidity, hate, weapons and disease-dread vocabulary from the blocklists and committed lists (phrases are meant to be memorized — no unpleasant imagery). The TUI cycling remains the final guard.
 - **Curation scope creep**: cleaning EN/EN lists is manual work; the change ships the minimum viable cleanup (proper nouns, auxiliaries, particles flagged by the experiment) rather than a full re-curation.
 - **fastText drift**: regeneration with newer vectors may shift rankings; determinism is per-binary (vectors are embedded), so regeneration is an explicit release decision.

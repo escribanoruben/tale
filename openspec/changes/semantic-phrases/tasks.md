@@ -3,7 +3,8 @@
 - [ ] 1.1 EN `nouns.tsv`: remove proper nouns and demonyms flagged by the experiment (norway, ben, andrew, canadian, september, june, vienna, ukrainian, brazil, japan, kenya, thomas, …); script-assisted scan + manual pass
 - [ ] 1.2 EN `verbs.tsv`: remove auxiliaries and defective forms (will, should, may, might, could, don, …); verify every letter keeps ≥ 1 verb after removal
 - [ ] 1.3 ES spot-check: remove filler verbs (ser, haber) and particles (porqué) where they were placed in the wrong POS list; confirm no coverage hole
-- [ ] 1.4 Regenerate embedded word data and confirm tests still pass
+- [x] 1.4 Suitability pass: extend `internal/wordprepare/blocklist/{en,es}.txt` (sexual aggression, gore, morbidity, hate, weapons, disease dread, disgust) and purge the committed TSVs of the same words (151 occurrences); every letter × POS bucket keeps ≥ 8 words
+- [ ] 1.5 Regenerate embedded word data and confirm tests still pass
 
 ## 2. Embeddings asset and pipeline
 

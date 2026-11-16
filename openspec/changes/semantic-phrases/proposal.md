@@ -10,7 +10,7 @@ Mnemonic phrases are currently picked by word frequency and length heuristics (`
 - **TUI candidate cycling**: the picker shows the best candidate and lets the user cycle the pool per block (Tab / Shift+Tab); the human is the final semantic judge — this also covers cases no automatic scorer can fix (garbage data, uncomfortable words).
 - Switch builtin **phrase template** to `noun → verb → noun → adjective` (adjective last, tagged to the first noun): the noun-verb-noun trio is the coherent core and the adjective is an attached descriptor. BREAKING for the mnemonic format of builtin languages.
 - **Fallback**: languages without embedded vectors (user-defined/customized) keep the current scoring behavior.
-- **Curate word lists** flagged by the experiment: EN nouns contain proper nouns ("norway", "ben", "andrew") and EN verbs contain auxiliaries ("will", "should", "may"); ES has filler verbs ("ser", "haber") and particles ("porqué").
+- **Curate word lists** flagged by the experiment: EN nouns contain proper nouns ("norway", "ben", "andrew") and EN verbs contain auxiliaries ("will", "should", "may"); ES has filler verbs ("ser", "haber") and particles ("porqué"). A **suitability pass** additionally purges distressing vocabulary (sexual aggression, gore, morbidity, hate, weapons, disease dread) from the generation blocklists and committed lists — phrases are meant to be memorized and must not evoke unpleasant imagery.
 
 ## Non-goals
 

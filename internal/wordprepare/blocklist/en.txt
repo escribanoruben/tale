@@ -7,3 +7,67 @@ stupid
 dumb
 retarded
 lame
+
+# Category 5: sexual content / explicit imagery
+aroused
+erotic
+naked
+nude
+obscene
+
+# Category 6: killing / death / morbidity
+kill
+killed
+killer
+killing
+murder
+murdered
+massacred
+dead
+deadly
+dying
+funeral
+rape
+rapist
+corpse
+torture
+hanging
+
+# Category 7: violence / gore
+brutal
+cruel
+vicious
+violent
+tortured
+injure
+injured
+injury
+wound
+wounded
+bleed
+bleeding
+blood
+bloody
+bomb
+bombed
+weapons
+gun
+
+# Category 8: hate / discrimination
+hate
+hated
+hatred
+racist
+nazi
+nazis
+abuse
+victimised
+victimized
+
+# Category 9: disease dread / disgust
+cancer
+tumor
+hiv
+vomiting
+toxic
+venomous
