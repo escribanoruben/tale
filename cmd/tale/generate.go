@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/escribanoruben/tale/internal/dictionary"
+	"github.com/escribanoruben/tale/internal/llm"
 	"github.com/escribanoruben/tale/internal/phrase"
 	"github.com/escribanoruben/tale/internal/profile"
 	"github.com/escribanoruben/tale/internal/settings"
@@ -28,13 +31,24 @@ func runGenerate(args []string) {
 		return
 	}
 
+	base, _ := settings.Load()
 	opts := phrase.Options{
 		AllowRepeat:          false,
 		AllowAdjacentRepeats: cfg.AllowAdjacentRepeats,
 	}
-	if base, _ := settings.Load(); base.SemanticEnabled() {
+	storyish := p.Strategy == "" || p.Strategy == profile.StrategyStory || p.Strategy == profile.StrategyAliasStory
+	if p.Strategy == profile.StrategyRandom {
+		// uniform words: the classic mode, no embeddings involved
+		opts.Uniform = true
+	} else if base.SemanticEnabled() && storyish {
 		opts.Semantic = phrase.SemanticAvailable(p, dict)
 	}
+
+	if storyish && opts.Semantic && base.LLMPolish {
+		runGeneratePasstale(p, dict, cfg, base)
+		return
+	}
+
 	pass, blocks, err := phrase.GeneratePassword(p, dict, opts)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "generate: %v\n", err)
@@ -42,6 +56,60 @@ func runGenerate(args []string) {
 	}
 
 	printGenerationOutput(p, pass, blocks, !cfg.AllowAdjacentRepeats)
+}
+
+// runGeneratePasstale is the top mode: semantic story + local LLM polish.
+// Output pairs each fluent sentence with its carrier recap, so recovery
+// never depends on the render.
+func runGeneratePasstale(p profile.Profile, dict *dictionary.Dictionary, cfg runConfig, base settings.Settings) {
+	opts := phrase.Options{
+		AllowRepeat:          false,
+		AllowAdjacentRepeats: cfg.AllowAdjacentRepeats,
+		Semantic:             true,
+	}
+	pass, blocks, pools, err := phrase.GenerateStoryBlocks(p, dict, opts)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "generate: %v\n", err)
+		os.Exit(1)
+	}
+
+	model := base.LLMModel
+	if model == "" {
+		model = llm.DefaultModel
+	}
+	client := llm.New(llm.Config{
+		URL:     base.LLMURL,
+		Model:   model,
+		Threads: base.LLMThreads,
+	})
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	polish := client.PolishStory(ctx, pools)
+
+	entropy := phrase.EntropyBits(len(p.Alphabet), len(pass), !cfg.AllowAdjacentRepeats)
+	strategy := p.Strategy
+	if strategy == "" || strategy == profile.StrategyAliasStory {
+		strategy = profile.StrategyStory
+	}
+	fmt.Printf("Password: %s\n\n", pass)
+	fmt.Printf("Passtale (%s + %s):\n", strategy, model)
+	for i, block := range blocks {
+		pb := polish[i]
+		if pb.Fallback || pb.Sentence == "" {
+			fmt.Printf("  [%s] %s\n", block, strings.Join(pb.Carriers, " "))
+		} else {
+			fmt.Printf("  [%s] %s\n", block, pb.Sentence)
+		}
+		fmt.Printf("      portadoras: %s\n", strings.Join(pb.Carriers, " "))
+	}
+	if !cfg.AllowAdjacentRepeats && len(pass) > 1 && len(p.Alphabet) >= 2 {
+		fmt.Printf("\nEntropy: ~%.1f bits (no adjacent repeats)\n", entropy)
+	} else {
+		fmt.Printf("\nEntropy: ~%.1f bits (%d chars × log₂(%d))\n", entropy, len(pass), len(p.Alphabet))
+	}
+	fmt.Println("\nRecovery:")
+	fmt.Println("  Take the first letter of each carrier word in the \"portadoras\" lines, in order")
+	fmt.Println("  (lowercase, strip accents on the first character, ñ→n). Concatenate to recover the password.")
 }
 
 // runGenerateNouns handles the noun-only strategies: the password is

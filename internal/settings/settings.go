@@ -20,6 +20,11 @@ type Settings struct {
 	// Semantic enables embedding-based mnemonic ranking; nil keeps the
 	// default (on for builtin languages that ship vectors).
 	Semantic *bool `toml:"semantic"`
+	// LLM polish layer (local ollama; opt-in). Empty model disables.
+	LLMPolish  bool   `toml:"llm_polish"`
+	LLMModel   string `toml:"llm_model"`
+	LLMURL     string `toml:"llm_url"`
+	LLMThreads int    `toml:"llm_threads"`
 }
 
 // Default returns built-in defaults (language unset until the user chooses).

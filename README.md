@@ -130,6 +130,36 @@ tale language new pt --alphabet=abcdefghijlmnopqrstuvxz --display-name Portugues
 tale generate --language pt
 ```
 
+### Mnemonic strategies and the passtale
+
+The mnemonic artifact is called the **passtale**: the story (or word set)
+whose initials spell your password. The shape is a profile key
+(`~/.tale/profiles/{lang}.toml`):
+
+```toml
+strategy = "story"     # random | story | noun_field | noun_path
+```
+
+| Strategy | What you memorize | Needs vectors |
+|----------|-------------------|:---:|
+| `random` | uniform words (classic mode) | no |
+| `story`  | phrases linked into a story (semantic ranking) | yes |
+| `noun_field` | X nouns sharing a semantic field (one scene) | yes |
+| `noun_path` | X nouns chained by association | yes |
+
+`phrase_template` (4 slots) is configurable for `story`; the default is
+`sustantivo → adjetivo → verbo → sustantivo` and the *trío* shape
+(`sustantivo → verbo → sustantivo → adjetivo`) is supported as an
+alternative.
+
+**LLM polish (opt-in, local only)** — with `llm_polish = true` in
+`~/.tale/settings.toml`, the story strategy gets fluent sentences from a
+local ollama model (`llm_model`, `llm_url`, `llm_threads`). The output
+pairs each fluent sentence with its **carrier recap** (`portadoras`),
+which is what recovers the password — recovery never depends on the
+render. Requires a running ollama; failures fall back to the telegraphic
+phrases.
+
 Run tests: `make test` (or `go test ./...`).
 
 See `make help` for all targets.

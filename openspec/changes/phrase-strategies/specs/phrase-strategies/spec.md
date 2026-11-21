@@ -59,3 +59,22 @@ Language profiles SHALL accept a `strategy` key with values `chained_story` (def
 
 - **WHEN** a language without embedded vectors declares `noun_field`
 - **THEN** generation reports that the strategy requires semantic vectors instead of silently degrading
+
+### Requirement: LLM polish layer (opt-in)
+
+With `llm_polish = true` in settings, the story strategy SHALL pass its per-block candidate pools through a local LLM pipeline: render each of the top candidates as a fluent sentence (retries with an order-reminder on failure), discard renders that break the carrier order, and pick the most natural among the valid ones (when there is more than one). The output SHALL pair each fluent sentence with its carrier recap, so password recovery never depends on the render. The LLM SHALL be a local ollama endpoint (`llm_model`, `llm_url`, `llm_threads` in settings); failures degrade to the telegraphic story.
+
+#### Scenario: Fluent passtale
+
+- **WHEN** a password is generated with `llm_polish = true` and the local LLM renders validly
+- **THEN** each block shows a fluent sentence whose carrier words, in order, spell the password, plus the carrier recap line
+
+#### Scenario: LLM unavailable
+
+- **WHEN** the configured LLM endpoint is unreachable or renders invalidly for every candidate
+- **THEN** the output falls back to the telegraphic carrier phrases with a visible recap
+
+#### Scenario: Random strategy unaffected
+
+- **WHEN** the profile declares `strategy = "random"`
+- **THEN** words are chosen uniformly and no embeddings or LLM are involved

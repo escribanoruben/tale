@@ -3,7 +3,7 @@ package profile
 import "testing"
 
 func TestValidateStrategy(t *testing.T) {
-	for _, s := range []string{"", StrategyChainedStory, StrategyNounField, StrategyNounPath} {
+	for _, s := range []string{"", StrategyStory, StrategyNounField, StrategyNounPath} {
 		p := Profile{Language: "es", PasswordLength: 16, BlockSize: 4,
 			Alphabet: "abc", PhraseTemplate: []string{"noun", "adj", "verb", "noun"},
 			Strategy: s}

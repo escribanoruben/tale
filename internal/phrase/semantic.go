@@ -20,8 +20,12 @@ const (
 )
 
 // semanticRoles maps semantic roles to template slot indexes.
-// Requires a template with exactly two nouns, one verb and one adjective;
-// the subject is the noun adjacent to the adjective in reading order.
+// Supported shapes (exactly two nouns, one verb, one adjective):
+//   - adjective adjacent to its noun: [noun adj verb noun] and
+//     [adj noun verb noun] — the subject is the noun next to the adjective;
+//   - trailing adjective (trío): [noun verb noun adj] — the adjective tags
+//     the first noun.
+//
 // Returns ok=false for templates the anchored score cannot express
 // (those languages keep the frequency-based scoring).
 func semanticRoles(template []string) ([4]int, bool) {
@@ -53,10 +57,15 @@ func semanticRoles(template []string) ([4]int, bool) {
 		return roles, false
 	}
 	subject := -1
-	for _, n := range nouns {
-		if abs(n-adjIdx) == 1 {
-			subject = n
-			break
+	if adjIdx == len(template)-1 && template[0] == "noun" {
+		// trío shape: the trailing adjective tags the first noun
+		subject = nouns[0]
+	} else {
+		for _, n := range nouns {
+			if abs(n-adjIdx) == 1 {
+				subject = n
+				break
+			}
 		}
 	}
 	if subject < 0 {

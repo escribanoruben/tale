@@ -20,3 +20,12 @@
 - [x] 4.1 README/profile docs for `strategy`
 - [x] 4.2 `go test ./...`, manual smoke (es noun_field + noun_path, 16 letters)
 - [ ] 4.3 CI green on GitHub after merge
+
+## 5. Strategy names, passtale and LLM polish
+
+- [x] 5.1 Strategy values renamed: `story` (alias `chained_story`), `random` (uniform words, no embeddings), noun strategies unchanged
+- [x] 5.2 Trío template shape supported: [noun verb noun adj] maps the trailing adjective to the first noun (roles fix)
+- [x] 5.3 `internal/llm`: polish pipeline (render candidates with retries, discard broken, pick most natural), carrier-stem validators, graceful fallback; local ollama only
+- [x] 5.4 Settings: `llm_polish`, `llm_model`, `llm_url`, `llm_threads`; `LoadEmbeddings` also reads user-data `embeddings.bin`
+- [x] 5.5 CLI passtale output: fluent sentence + carrier recap per block; `phrase.GenerateStoryBlocks` exported
+- [ ] 5.6 CI green on GitHub after merge

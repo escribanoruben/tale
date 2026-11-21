@@ -18,16 +18,19 @@ type Profile struct {
 	Alphabet       string   `toml:"alphabet"`
 	PhraseTemplate []string `toml:"phrase_template"`
 	DataLayout     string   `toml:"data_layout"`
-	// Strategy selects the mnemonic shape: chained_story (default),
+	// Strategy selects the mnemonic shape: story (default), random,
 	// noun_field or noun_path.
 	Strategy string `toml:"strategy"`
 }
 
-// Strategy names accepted in profiles.
+// Strategy names accepted in profiles. "chained_story" is kept as an
+// alias of "story" for compatibility.
 const (
-	StrategyChainedStory = "chained_story"
-	StrategyNounField    = "noun_field"
-	StrategyNounPath     = "noun_path"
+	StrategyRandom     = "random"
+	StrategyStory      = "story"
+	StrategyNounField  = "noun_field"
+	StrategyNounPath   = "noun_path"
+	StrategyAliasStory = "chained_story"
 )
 
 // Load reads a profile by id from the embedded filesystem.

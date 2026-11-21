@@ -24,6 +24,9 @@ type Options struct {
 	// vectors); languages or templates without support fall back to the
 	// frequency-based scoring.
 	Semantic bool
+	// Uniform selects words uniformly at random (strategy "random"),
+	// instead of the frequency-ranked Best search.
+	Uniform bool
 }
 
 // BlockResult holds one mnemonic phrase for a password block.
@@ -215,7 +218,14 @@ func GeneratePassword(p profile.Profile, dict *dictionary.Dictionary, opts Optio
 // generatePasswordSemantic draws block letters and then optimizes the
 // whole narrative over their pools (exact k-best DP). Falls back to the
 // per-block frequency path through the caller when it fails.
-func generatePasswordSemantic(p profile.Profile, dict *dictionary.Dictionary, opts Options, numBlocks int) (string, []BlockResult, error) {
+// GenerateStoryBlocks draws the block letters (with adjacency rules) and
+// builds the per-block candidate pools, for the whole-story DP or the
+// LLM polish layer.
+func GenerateStoryBlocks(p profile.Profile, dict *dictionary.Dictionary, opts Options) (string, []string, [][][]string, error) {
+	numBlocks := p.PasswordLength / p.BlockSize
+	if p.PasswordLength%p.BlockSize != 0 {
+		return "", nil, nil, fmt.Errorf("password length %d not divisible by block size %d", p.PasswordLength, p.BlockSize)
+	}
 	pwOpts := password.Options{PreventAdjacentRepeats: !opts.AllowAdjacentRepeats}
 	blockLetters := make([]string, 0, numBlocks)
 	var prev rune
@@ -225,7 +235,7 @@ func generatePasswordSemantic(p profile.Profile, dict *dictionary.Dictionary, op
 		for attempt := 0; attempt < 10_000; attempt++ {
 			b, err := password.GenerateAfter(p.Alphabet, p.BlockSize, prev, pwOpts)
 			if err != nil {
-				return "", nil, err
+				return "", nil, nil, err
 			}
 			ok, err := HasCandidate(p, b, dict, nil, opts)
 			if err != nil || !ok {
@@ -236,12 +246,31 @@ func generatePasswordSemantic(p profile.Profile, dict *dictionary.Dictionary, op
 			break
 		}
 		if !found {
-			return "", nil, fmt.Errorf("could not generate valid block after many attempts")
+			return "", nil, nil, fmt.Errorf("could not generate valid block after many attempts")
 		}
 		prev = rune(block[len(block)-1])
 		blockLetters = append(blockLetters, block)
 	}
+	pools := make([][][]string, numBlocks)
+	for i, block := range blockLetters {
+		cands, err := semanticPool(p, block, dict, opts, semanticPoolK)
+		if err != nil {
+			return "", nil, nil, err
+		}
+		pool := make([][]string, len(cands))
+		for j, c := range cands {
+			pool[j] = c.Words
+		}
+		pools[i] = pool
+	}
+	return strings.Join(blockLetters, ""), blockLetters, pools, nil
+}
 
+func generatePasswordSemantic(p profile.Profile, dict *dictionary.Dictionary, opts Options, numBlocks int) (string, []BlockResult, error) {
+	pass, blockLetters, _, err := GenerateStoryBlocks(p, dict, opts)
+	if err != nil {
+		return "", nil, err
+	}
 	stories, err := SemanticStories(p, blockLetters, dict, opts, semanticStoriesM)
 	if err != nil {
 		return "", nil, err
@@ -250,7 +279,7 @@ func generatePasswordSemantic(p profile.Profile, dict *dictionary.Dictionary, op
 	for i, block := range blockLetters {
 		results = append(results, BlockResult{Letters: block, Words: stories[0][i]})
 	}
-	return strings.Join(blockLetters, ""), results, nil
+	return pass, results, nil
 }
 
 // phraseNouns returns the words sitting in the template's noun slots.
