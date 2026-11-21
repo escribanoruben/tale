@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/escribanoruben/tale/internal/dictionary"
 	"github.com/escribanoruben/tale/internal/phrase"
 	"github.com/escribanoruben/tale/internal/profile"
 	"github.com/escribanoruben/tale/internal/settings"
@@ -22,6 +23,11 @@ func runGenerate(args []string) {
 		os.Exit(1)
 	}
 
+	if p.Strategy == profile.StrategyNounField || p.Strategy == profile.StrategyNounPath {
+		runGenerateNouns(p, dict, cfg)
+		return
+	}
+
 	opts := phrase.Options{
 		AllowRepeat:          false,
 		AllowAdjacentRepeats: cfg.AllowAdjacentRepeats,
@@ -36,6 +42,29 @@ func runGenerate(args []string) {
 	}
 
 	printGenerationOutput(p, pass, blocks, !cfg.AllowAdjacentRepeats)
+}
+
+// runGenerateNouns handles the noun-only strategies: the password is
+// spelled by the initials of X nouns.
+func runGenerateNouns(p profile.Profile, dict *dictionary.Dictionary, cfg runConfig) {
+	opts := phrase.Options{AllowAdjacentRepeats: cfg.AllowAdjacentRepeats}
+	pass, words, err := phrase.GenerateNouns(p, dict, opts)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "generate: %v\n", err)
+		os.Exit(1)
+	}
+
+	entropy := phrase.EntropyBits(len(p.Alphabet), len(pass), !cfg.AllowAdjacentRepeats)
+	fmt.Printf("Password: %s\n\n", pass)
+	fmt.Printf("Mnemonic nouns (%s):\n  %s\n", p.Strategy, strings.Join(words, " "))
+	if !cfg.AllowAdjacentRepeats && len(pass) > 1 && len(p.Alphabet) >= 2 {
+		fmt.Printf("\nEntropy: ~%.1f bits (no adjacent repeats)\n", entropy)
+	} else {
+		fmt.Printf("\nEntropy: ~%.1f bits (%d chars × log₂(%d))\n", entropy, len(pass), len(p.Alphabet))
+	}
+	fmt.Println("\nRecovery:")
+	fmt.Println("  Take the first letter of each noun, in order (lowercase, strip accents on the first character, ñ→n).")
+	fmt.Println("  Concatenate the initials to recover the password.")
 }
 
 func mergeBatchDefaults(cfg runConfig) runConfig {

@@ -18,7 +18,17 @@ type Profile struct {
 	Alphabet       string   `toml:"alphabet"`
 	PhraseTemplate []string `toml:"phrase_template"`
 	DataLayout     string   `toml:"data_layout"`
+	// Strategy selects the mnemonic shape: chained_story (default),
+	// noun_field or noun_path.
+	Strategy string `toml:"strategy"`
 }
+
+// Strategy names accepted in profiles.
+const (
+	StrategyChainedStory = "chained_story"
+	StrategyNounField    = "noun_field"
+	StrategyNounPath     = "noun_path"
+)
 
 // Load reads a profile by id from the embedded filesystem.
 func Load(files embed.FS, id string) (Profile, error) {

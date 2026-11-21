@@ -7,7 +7,11 @@ import (
 	"fmt"
 	"io/fs"
 	"math"
+	"os"
+	"path/filepath"
 	"strings"
+
+	"github.com/escribanoruben/tale/internal/paths"
 )
 
 // Semantic embeddings stored next to the word lists (data/lang/embeddings.bin),
@@ -32,9 +36,16 @@ type Embeddings struct {
 	vecs  []float32 // len(Words) * Dim rows, normalized
 }
 
-// LoadEmbeddings reads the embedded vectors for a language.
+// LoadEmbeddings reads the embedded vectors for a language. User
+// languages (data under ~/.tale) may also ship embeddings.bin in their
+// data directory; the user copy wins over the embedded one.
 // Returns ErrNoEmbeddings when the language ships none (custom languages).
 func LoadEmbeddings(lang string) (*Embeddings, error) {
+	if dir, err := paths.DataDir(); err == nil {
+		if data, err := os.ReadFile(filepath.Join(dir, lang, "embeddings.bin")); err == nil {
+			return ParseEmbeddings(data)
+		}
+	}
 	data, err := fs.ReadFile(Words, lang+"/embeddings.bin")
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, ErrNoEmbeddings
