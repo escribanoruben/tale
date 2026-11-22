@@ -17,11 +17,12 @@ const (
 
 type welcomeModel struct {
 	defaults AppSettings
+	notice   string
 	focus    int
 }
 
-func newWelcomeModel(defaults AppSettings) welcomeModel {
-	return welcomeModel{defaults: defaults}
+func newWelcomeModel(defaults AppSettings, notice string) welcomeModel {
+	return welcomeModel{defaults: defaults, notice: notice}
 }
 
 func (w *welcomeModel) moveFocus(delta int) {
@@ -49,6 +50,10 @@ func (w welcomeModel) View(hits *hitTargets) string {
 	lines = append(lines, "")
 	for _, p := range text.welcomeBody {
 		lines = append(lines, renderWrapped(labelStyle, innerW, p))
+	}
+	if w.notice != "" {
+		lines = append(lines, "")
+		lines = append(lines, warnStyle.Render(fmt.Sprintf(text.updateNotice, w.notice)))
 	}
 	lines = append(lines, "")
 

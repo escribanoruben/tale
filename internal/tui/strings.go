@@ -26,6 +26,7 @@ type uiText struct {
 	cancelled               string
 	welcomeTitle            string
 	welcomeBody             []string
+	updateNotice            string
 	welcomeDefaultsOption   string
 	welcomeCustomizeOption  string
 	welcomeHelp             string
@@ -107,6 +108,7 @@ func uiFor(p profile.Profile) uiText {
 				"Los ajustes se guardan en ~/.tale/settings.toml y podrás cambiarlos más tarde con Tab en el selector de palabras.",
 			},
 			welcomeDefaultsOption:   "Usar valores por defecto — %s, %d frases, sin letras iguales seguidas",
+			updateNotice:            "Nueva versión disponible: %s — ejecuta `tale update` para actualizar",
 			welcomeCustomizeOption:  "Configurar antes de empezar",
 			welcomeHelp:             "j/k · mover  Enter · elegir  Esc · salir",
 			setupHelp:               "j/k · mover  Espacio · elegir  Enter · empezar  Esc · salir",
@@ -184,6 +186,7 @@ func uiFor(p profile.Profile) uiText {
 			"Settings are saved to ~/.tale/settings.toml and you can change them later with Tab in the word picker.",
 		},
 		welcomeDefaultsOption:   "Use defaults — %s, %d phrases, no adjacent repeats",
+		updateNotice:            "New version available: %s — run `tale update` to update",
 		welcomeCustomizeOption:  "Configure before starting",
 		welcomeHelp:             "j/k · move  Enter · choose  Esc · quit",
 		setupHelp:               "j/k · move  Space · select  Enter · start  Esc · quit",

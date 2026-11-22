@@ -125,6 +125,12 @@ make run            # TUI without installing (language from ~/.tale/settings or 
 tale language init es
 tale generate --language es
 
+# Self-update: check the latest release and swap the binary in place
+tale update --check    # report only (never modifies anything)
+tale update            # confirm and update (verified against checksums.txt)
+# Optional: show an update notice on the TUI welcome screen
+#   check_updates = true  in ~/.tale/settings.toml (throttled to one check per 24h)
+
 # Add a custom language with its own alphabet (scaffolds empty word lists)
 tale language new pt --alphabet=abcdefghijlmnopqrstuvxz --display-name Portuguese
 # Fill ~/.tale/data/pt/{letter}/*.tsv, then:

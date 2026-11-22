@@ -21,6 +21,7 @@ type AppSettings struct {
 // AppConfig configures the full interactive flow.
 type AppConfig struct {
 	Version              string
+	UpdateNotice         string
 	Language             string
 	Phrases              int
 	Length               int
@@ -78,7 +79,7 @@ func RunApp(cfg AppConfig) error {
 		cfg:         cfg,
 		settings:    settings,
 		languages:   languages,
-		welcome:     newWelcomeModel(settings),
+		welcome:     newWelcomeModel(settings, cfg.UpdateNotice),
 		setup:       newSetupModel(languages, settings),
 		welcomeHits: &hitTargets{},
 		setupHits:   &hitTargets{},

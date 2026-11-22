@@ -107,5 +107,6 @@ func persistRunConfig(cfg runConfig) error {
 		LLMModel:             existing.LLMModel,
 		LLMURL:               existing.LLMURL,
 		LLMThreads:           existing.LLMThreads,
+		CheckUpdates:         existing.CheckUpdates,
 	})
 }

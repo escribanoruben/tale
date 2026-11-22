@@ -10,7 +10,7 @@ import (
 )
 
 func TestWelcomeViewShowsChoices(t *testing.T) {
-	w := newWelcomeModel(AppSettings{Language: "en", Phrases: 5})
+	w := newWelcomeModel(AppSettings{Language: "en", Phrases: 5}, "")
 	view := w.View(nil)
 	for _, want := range []string{"First run", "Use defaults", "Configure before starting", "Enter · choose"} {
 		if !strings.Contains(view, want) {
@@ -24,7 +24,7 @@ func TestWelcomeEnterDefaultsStartsPicker(t *testing.T) {
 		phase:     appPhaseWelcome,
 		settings:  AppSettings{Language: "en", Phrases: 5},
 		languages: []string{"en"},
-		welcome:   newWelcomeModel(AppSettings{Language: "en", Phrases: 5}),
+		welcome:   newWelcomeModel(AppSettings{Language: "en", Phrases: 5}, ""),
 		cfg: AppConfig{
 			LoadProfile: func(language string) (profile.Profile, *dictionary.Dictionary, error) {
 				p, err := profile.Load(profile.Files, language)
@@ -51,7 +51,7 @@ func TestWelcomeEnterCustomizeOpensSetup(t *testing.T) {
 		phase:     appPhaseWelcome,
 		settings:  AppSettings{Language: "en", Phrases: 5},
 		languages: []string{"en"},
-		welcome:   newWelcomeModel(AppSettings{Language: "en", Phrases: 5}),
+		welcome:   newWelcomeModel(AppSettings{Language: "en", Phrases: 5}, ""),
 	}
 	app.welcome.focus = welcomeChoiceCustomize
 	updated, _ := app.Update(tea.KeyMsg{Type: tea.KeyEnter})

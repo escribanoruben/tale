@@ -22,6 +22,8 @@ func main() {
 	case "version", "-v", "--version":
 		printVersion()
 		return
+	case "update":
+		runUpdate(args[1:])
 	case "help", "-h", "--help":
 		usage()
 		return
@@ -118,6 +120,7 @@ Usage:
   tale profile …                         deprecated alias for language …
   tale stats [--json/-j] [--min/-m N]    show embedded word-list statistics
   tale version                           show version, commit, and build date
+  tale update [--check/-c] [--yes/-y]    update the binary from the latest release
   tale help                              show this help
 
 Options (TUI and generate):

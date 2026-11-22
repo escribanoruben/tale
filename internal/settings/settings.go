@@ -25,6 +25,9 @@ type Settings struct {
 	LLMModel   string `toml:"llm_model"`
 	LLMURL     string `toml:"llm_url"`
 	LLMThreads int    `toml:"llm_threads"`
+	// Update notice on TUI start (opt-in; throttled to one check per
+	// 24h against the GitHub releases API).
+	CheckUpdates bool `toml:"check_updates"`
 }
 
 // Default returns built-in defaults (language unset until the user chooses).
