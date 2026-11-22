@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/spf13/pflag"
 
 	"github.com/escribanoruben/tale/internal/worddata"
 )
@@ -35,8 +36,8 @@ func main() {
 	case "profile":
 		runProfile(args[1:])
 	default:
-		if hasFlag(args, "--no-tui") {
-			runGenerate(stripFlag(args, "--no-tui"))
+		if hasFlag(args, "--no-tui", "-n") {
+			runGenerate(stripFlag(args, "--no-tui", "-n"))
 			return
 		}
 		if strings.HasPrefix(args[0], "-") {
@@ -49,19 +50,28 @@ func main() {
 	}
 }
 
-func hasFlag(args []string, name string) bool {
+func hasFlag(args []string, names ...string) bool {
 	for _, a := range args {
-		if a == name {
-			return true
+		for _, name := range names {
+			if a == name {
+				return true
+			}
 		}
 	}
 	return false
 }
 
-func stripFlag(args []string, name string) []string {
+func stripFlag(args []string, names ...string) []string {
 	out := make([]string, 0, len(args))
 	for _, a := range args {
-		if a != name {
+		drop := false
+		for _, name := range names {
+			if a == name {
+				drop = true
+				break
+			}
+		}
+		if !drop {
 			out = append(out, a)
 		}
 	}
@@ -69,9 +79,9 @@ func stripFlag(args []string, name string) []string {
 }
 
 func runStats(args []string) {
-	fs := flag.NewFlagSet("stats", flag.ExitOnError)
-	jsonOut := fs.Bool("json", false, "output JSON")
-	min := fs.Int("min", 8, "highlight buckets with fewer than N words")
+	fs := pflag.NewFlagSet("stats", pflag.ExitOnError)
+	jsonOut := fs.BoolP("json", "j", false, "output JSON")
+	min := fs.IntP("min", "m", 8, "highlight buckets with fewer than N words")
 	_ = fs.Parse(args)
 
 	report, err := worddata.Stats()
@@ -99,22 +109,24 @@ func usage() {
 
 Usage:
   tale [options]                         interactive TUI (default)
-  tale --no-tui [options]                generate password + mnemonic (no TUI)
-  tale generate [options]                same as --no-tui
+  tale -n [options]                      generate password + passtale (no TUI)
+  tale generate [options]                same as -n / --no-tui
   tale tui [options]                     interactive TUI
   tale language list|show <language>     manage languages
   tale language init <language> [--from LANG] [--display-name NAME] [--force] [--force-data]
   tale language new <language> --alphabet LETTERS [--display-name NAME] [--force] [--force-data]
   tale profile …                         deprecated alias for language …
-  tale stats [--json] [--min N]          show embedded word-list statistics
+  tale stats [--json/-j] [--min/-m N]    show embedded word-list statistics
   tale version                           show version, commit, and build date
   tale help                              show this help
 
 Options (TUI and generate):
-  --language LANG          language code (en, es, or a custom language; saved to ~/.tale/settings.toml)
-  --phrases N              number of mnemonic phrases (default from settings or 5)
-  --length N               password length (overrides --phrases)
-  --allow-adjacent-repeats allow consecutive identical password letters
+  -l, --language LANG           language code (en, es, or a custom language; saved to ~/.tale/settings.toml)
+  -p, --phrases N               number of mnemonic phrases (default from settings or 5)
+      --length N                password length (overrides --phrases)
+      --password PASS           derive the passtale from an existing password (the TUI lets you edit it)
+  -a, --allow-adjacent-repeats  allow consecutive identical password letters
+  -n, --no-tui                  generate instead of starting the TUI
 
 Settings file: ~/.tale/settings.toml
 Languages:     ~/.tale/profiles/{language}.toml (overrides built-in en/es)

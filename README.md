@@ -114,6 +114,7 @@ make run            # TUI without installing (language from ~/.tale/settings or 
 ./tale generate --language en
 ./tale generate --language en --length 16
 ./tale generate --language es
+./tale generate -l es -p 4 -a        # short flags: -l language, -p phrases, -a allow adjacent repeats
 
 # Interactive mnemonic picker
 ./tale tui --language en

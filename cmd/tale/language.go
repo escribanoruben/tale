@@ -1,11 +1,11 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
-	"strings"
 	"text/tabwriter"
+
+	"github.com/spf13/pflag"
 
 	"github.com/escribanoruben/tale/internal/paths"
 	"github.com/escribanoruben/tale/internal/profile"
@@ -41,17 +41,18 @@ func runProfile(args []string) {
 }
 
 func runLanguageInit(args []string) {
-	fs := flag.NewFlagSet("language init", flag.ExitOnError)
+	fs := pflag.NewFlagSet("language init", pflag.ExitOnError)
+	fs.Usage = func() {
+		fmt.Fprintln(os.Stderr, "usage: tale language init <language> [--from LANG] [--display-name NAME] [--force] [--force-data]")
+	}
 	from := fs.String("from", "", "source language (default: same as target)")
 	displayName := fs.String("display-name", "", "human-readable language name")
 	force := fs.Bool("force", false, "overwrite existing user language config")
 	forceData := fs.Bool("force-data", false, "overwrite existing ~/.tale/data/{language}")
-	lang, flagArgs, err := splitPositional(args)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "usage: tale language init <language> [--from LANG]")
-		os.Exit(1)
+	lang, ok := singlePositional(fs, args, "language init")
+	if !ok {
+		return
 	}
-	_ = fs.Parse(flagArgs)
 
 	result, err := profile.InitUserProfile(profile.InitOptions{
 		Language:     lang,
@@ -78,17 +79,18 @@ func runLanguageInit(args []string) {
 }
 
 func runLanguageNew(args []string) {
-	fs := flag.NewFlagSet("language new", flag.ExitOnError)
+	fs := pflag.NewFlagSet("language new", pflag.ExitOnError)
+	fs.Usage = func() {
+		fmt.Fprintln(os.Stderr, "usage: tale language new <language> --alphabet LETTERS [--display-name NAME] [--force] [--force-data]")
+	}
 	alphabet := fs.String("alphabet", "", "required unique lowercase letters for this language")
 	displayName := fs.String("display-name", "", "human-readable language name")
 	force := fs.Bool("force", false, "overwrite existing user language config")
 	forceData := fs.Bool("force-data", false, "overwrite existing ~/.tale/data/{language}")
-	lang, flagArgs, err := splitPositional(args)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "usage: tale language new <language> --alphabet LETTERS")
-		os.Exit(1)
+	lang, ok := singlePositional(fs, args, "language new")
+	if !ok {
+		return
 	}
-	_ = fs.Parse(flagArgs)
 
 	if *alphabet == "" {
 		fmt.Fprintln(os.Stderr, "language new: --alphabet is required (unique lowercase letters)")
@@ -124,7 +126,7 @@ func runLanguageNew(args []string) {
 }
 
 func runLanguageList(args []string) {
-	_ = flag.NewFlagSet("language list", flag.ExitOnError).Parse(args)
+	_ = pflag.NewFlagSet("language list", pflag.ExitOnError).Parse(args)
 
 	entries, err := profile.List()
 	if err != nil {
@@ -151,13 +153,14 @@ func runLanguageList(args []string) {
 }
 
 func runLanguageShow(args []string) {
-	fs := flag.NewFlagSet("language show", flag.ExitOnError)
-	lang, flagArgs, err := splitPositional(args)
-	if err != nil {
+	fs := pflag.NewFlagSet("language show", pflag.ExitOnError)
+	fs.Usage = func() {
 		fmt.Fprintln(os.Stderr, "usage: tale language show <language>")
-		os.Exit(1)
 	}
-	_ = fs.Parse(flagArgs)
+	lang, ok := singlePositional(fs, args, "language show")
+	if !ok {
+		return
+	}
 
 	resolved, err := profile.Resolve(lang)
 	if err != nil {
@@ -189,45 +192,19 @@ func runLanguageShow(args []string) {
 	}
 }
 
-// splitPositional takes the first non-flag argument as the language code so that
-// flags may appear before or after it (Go's flag package stops at the first positional).
-func splitPositional(args []string) (positional string, flagArgs []string, err error) {
-	valueFlags := map[string]bool{
-		"-from": true, "--from": true,
-		"-display-name": true, "--display-name": true,
-		"-alphabet": true, "--alphabet": true,
+// singlePositional parses flags (pflag handles flags interspersed with
+// positionals, --flag=value, and the -- terminator) and requires exactly
+// one positional argument, used as the language code.
+func singlePositional(fs *pflag.FlagSet, args []string, command string) (string, bool) {
+	if err := fs.Parse(args); err != nil {
+		return "", false // ExitOnError already printed and exited
 	}
-	flagArgs = make([]string, 0, len(args))
-	for i := 0; i < len(args); i++ {
-		a := args[i]
-		if a == "--" {
-			rest := args[i+1:]
-			if positional == "" && len(rest) > 0 {
-				positional = rest[0]
-				flagArgs = append(flagArgs, rest[1:]...)
-			} else {
-				flagArgs = append(flagArgs, rest...)
-			}
-			break
-		}
-		if strings.HasPrefix(a, "-") {
-			flagArgs = append(flagArgs, a)
-			name, _, hasEq := strings.Cut(a, "=")
-			if !hasEq && valueFlags[name] && i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
-				i++
-				flagArgs = append(flagArgs, args[i])
-			}
-			continue
-		}
-		if positional != "" {
-			return "", nil, fmt.Errorf("unexpected argument %q", a)
-		}
-		positional = a
+	rest := fs.Args()
+	if len(rest) != 1 {
+		fs.Usage()
+		os.Exit(1)
 	}
-	if positional == "" {
-		return "", nil, fmt.Errorf("missing language")
-	}
-	return positional, flagArgs, nil
+	return rest[0], true
 }
 
 func languageUsage() {
