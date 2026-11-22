@@ -52,5 +52,6 @@ release: ## Cut a release (VERSION=x.y.z, or auto from Conventional Commits)
 	ver="$(VERSION)"; \
 	echo "$$ver" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$$' || ver=; \
 	if [ -z "$$ver" ]; then ver=$$(./scripts/next-version.sh); fi; \
+	ver="$${ver#v}"; \
 	echo "==> Cutting v$$ver"; \
 	./scripts/release.sh "$$ver"
