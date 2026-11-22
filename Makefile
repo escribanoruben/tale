@@ -50,6 +50,7 @@ release-plan: ## Show current tag, bump type and next version (no publish)
 release: ## Cut a release (VERSION=x.y.z, or auto from Conventional Commits)
 	@set -e; \
 	ver="$(VERSION)"; \
+	echo "$$ver" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$$' || ver=; \
 	if [ -z "$$ver" ]; then ver=$$(./scripts/next-version.sh); fi; \
 	echo "==> Cutting v$$ver"; \
 	./scripts/release.sh "$$ver"
