@@ -167,11 +167,17 @@ func TestSessionRandomizePhrase(t *testing.T) {
 	}
 	before := append([]string(nil), s.Selections[0]...)
 
-	if err := s.randomizePhrase(); err != nil {
-		t.Fatal(err)
+	// A reroll may legitimately pick the same candidate (CSPRNG draw
+	// over the pool); several attempts should still move the phrase.
+	changed := false
+	for attempt := 0; attempt < 10 && !changed; attempt++ {
+		if err := s.randomizePhrase(); err != nil {
+			t.Fatal(err)
+		}
+		changed = joinWords(s.Selections[0]) != joinWords(before)
 	}
-	if joinWords(s.Selections[0]) == joinWords(before) {
-		t.Fatal("expected phrase to change")
+	if !changed {
+		t.Fatal("expected phrase to change within 10 rerolls")
 	}
 	if s.Password != "abcd" {
 		t.Fatalf("password changed to %q, want abcd", s.Password)
