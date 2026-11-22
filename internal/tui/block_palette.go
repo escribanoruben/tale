@@ -17,7 +17,7 @@ var blockPalettes = []blockPalette{
 	{active: "220", inactive: "179", chipBG: "136", chipFG: "233"}, // yellow
 	{active: "203", inactive: "167", chipBG: "167", chipFG: "233"}, // coral
 	{active: "75", inactive: "32", chipBG: "25", chipFG: "255"},    // blue
-	{active: "141", inactive: "97", chipBG: "55", chipFG: "255"},    // purple
+	{active: "141", inactive: "97", chipBG: "55", chipFG: "255"},   // purple
 }
 
 func blockPaletteFor(index int) blockPalette {

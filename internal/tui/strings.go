@@ -3,98 +3,114 @@ package tui
 import "github.com/escribanoruben/tale/internal/profile"
 
 type uiText struct {
-	commandTagline       string
-	subtitle             string
-	helpBody             []string
-	helpShortcutsTitle   string
-	helpShortcuts        []string
-	helpDismiss          string
-	password             string
-	entropy              string
-	noWords              string
-	noWordsHint          string
-	randomTitle          string
-	randomWord           string
-	randomPhrase         string
-	randomAll            string
-	randomCancel         string
-	changeLetter         string
-	changeCancel         string
-	summaryTitle         string
-	recovery             string
-	cancelled            string
-	setupSubtitle        string
-	setupHelp            string
-	settingsBarPrefix    string
-	settingsTitle        string
-	settingsLanguage     string
-	settingsPhrases      string
-	settingsAllowAdjacent string
+	commandTagline          string
+	subtitle                string
+	helpBody                []string
+	helpShortcutsTitle      string
+	helpShortcuts           []string
+	helpDismiss             string
+	password                string
+	entropy                 string
+	noWords                 string
+	noWordsHint             string
+	randomTitle             string
+	randomWord              string
+	randomPhrase            string
+	randomAll               string
+	randomLLM               string
+	randomCancel            string
+	changeLetter            string
+	changeCancel            string
+	summaryTitle            string
+	recovery                string
+	cancelled               string
+	welcomeTitle            string
+	welcomeBody             []string
+	welcomeDefaultsOption   string
+	welcomeCustomizeOption  string
+	welcomeHelp             string
+	setupHelp               string
+	setupStart              string
+	settingsBarPrefix       string
+	settingsTitle           string
+	settingsLanguage        string
+	settingsPhrases         string
+	settingsAllowAdjacent   string
 	settingsAdjacentPrevent string
 	settingsAdjacentAllow   string
-	settingsSubtitle     string
-	settingsRegenPassword string
-	settingsFocusHint    string
-	settingsListHelp         string
-	settingsListHelpPending  string
-	settingsConfirmApply     string
-	settingsConfirmDiscard   string
-	settingsDiscardPrompt    string
-	settingsDiscardHelp      string
-	settingsPendingHint  string
-	phraseOptionSummary  string
-	phraseUseCase3       string
-	phraseUseCase4       string
-	phraseUseCase5       string
-	phraseUseCase6       string
-	phraseUseCase8       string
-	entropyBitsUnit      string
-	entropyFormula       string
-	yes                  string
-	no                   string
-	quitPrompt           string
-	quitHelp             string
+	settingsSubtitle        string
+	settingsRegenPassword   string
+	settingsFocusHint       string
+	settingsListHelp        string
+	settingsListHelpPending string
+	settingsConfirmApply    string
+	settingsConfirmDiscard  string
+	settingsDiscardPrompt   string
+	settingsDiscardHelp     string
+	settingsPendingHint     string
+	phraseOptionSummary     string
+	phraseUseCase3          string
+	phraseUseCase4          string
+	phraseUseCase5          string
+	phraseUseCase6          string
+	phraseUseCase8          string
+	entropyBitsUnit         string
+	entropyFormula          string
+	yes                     string
+	no                      string
+	quitPrompt              string
+	quitHelp                string
 }
 
 func uiFor(p profile.Profile) uiText {
 	if p.Language == "es" {
 		return uiText{
-			commandTagline:          "Una implementación del Tales Vault System",
-			subtitle:                "Elige palabras cuya inicial coincida con cada letra de la contraseña.",
+			commandTagline: "Una implementación del Tales Vault System",
+			subtitle:       "Elige palabras cuya inicial coincida con cada letra de la contraseña.",
 			helpBody: []string{
 				"Convierte contraseñas en frases mnemotécnicas fáciles de recordar.",
 				"Cada letra de la contraseña se asocia a una palabra cuya inicial coincide, siguiendo una plantilla gramatical (sustantivo, adjetivo, verbo…).",
 				"Navega entre casillas (←→) y frases (↑↓). El rodillo a la izquierda muestra las palabras disponibles; usa n/p o la rueda del ratón para cambiar.",
 				"Cuando termines, pulsa Enter para ver el resultado final y las frases listas para memorizar.",
 			},
-			helpShortcutsTitle:    "Atajos",
+			helpShortcutsTitle: "Atajos",
 			helpShortcuts: []string{
 				"h/l · casilla anterior / siguiente",
 				"j/k · frase anterior / siguiente",
 				"n/p · palabra anterior / siguiente",
 				"Enter · ver resultado",
 				"r · menú aleatorio",
+				"l · re-render con IA (historia)",
 				"Tab · ajustes",
 				"? · ayuda",
 				"Esc · salir",
 			},
-			helpDismiss:             "? / Enter / Esc · cerrar",
-			password:                "Contraseña",
-			entropy:                 "Entropía",
-			noWords:                 "No quedan palabras disponibles para esta casilla.",
-			noWordsHint:             "Prueba otra casilla (←/→) u otro bloque (↑/↓).",
-			randomTitle:             "Aleatorio",
-			randomWord:              "w  palabra actual",
-			randomPhrase:            "f  frase del bloque",
-			randomAll:               "a  toda la contraseña",
-			randomCancel:            "Esc cancelar",
-			changeLetter:            "Escribe una letra del alfabeto para cambiar la contraseña en esta posición:",
-			changeCancel:            "Esc cancelar",
-			summaryTitle:            "Frases mnemotécnicas",
-			recovery:                "Recuperación: toma la primera letra de cada palabra (sin tildes, ñ→n).",
-			cancelled:               "Cancelado.",
-			setupSubtitle:           "Configura el idioma y las opciones de generación antes de empezar.",
-			setupHelp:               "j/k · mover  Espacio · elegir  g · empezar  Esc · salir",
+			helpDismiss:  "? / Enter / Esc · cerrar",
+			password:     "Contraseña",
+			entropy:      "Entropía",
+			noWords:      "No quedan palabras disponibles para esta casilla.",
+			noWordsHint:  "Prueba otra casilla (←/→) u otro bloque (↑/↓).",
+			randomTitle:  "Aleatorio",
+			randomWord:   "w  palabra actual",
+			randomPhrase: "f  frase del bloque",
+			randomAll:    "a  toda la contraseña",
+			randomLLM:    "l  re-render con IA",
+			randomCancel: "Esc cancelar",
+			changeLetter: "Escribe una letra del alfabeto para cambiar la contraseña en esta posición:",
+			changeCancel: "Esc cancelar",
+			summaryTitle: "Frases mnemotécnicas",
+			recovery:     "Recuperación: toma la primera letra de cada palabra (sin tildes, ñ→n).",
+			cancelled:    "Cancelado.",
+			welcomeTitle: "Primera ejecución",
+			welcomeBody: []string{
+				"Es la primera vez que ejecutas tale. Puedes empezar con los valores por defecto o abrir la configuración para elegir idioma, longitud y otras opciones.",
+				"Los ajustes se guardan en ~/.tale/settings.toml y podrás cambiarlos más tarde con Tab en el selector de palabras.",
+			},
+			welcomeDefaultsOption:   "Usar valores por defecto — %s, %d frases, sin letras iguales seguidas",
+			welcomeCustomizeOption:  "Configurar antes de empezar",
+			welcomeHelp:             "j/k · mover  Enter · elegir  Esc · salir",
+			setupHelp:               "j/k · mover  Espacio · elegir  Enter · empezar  Esc · salir",
+			setupStart:              "Empezar",
 			settingsBarPrefix:       "Ajustes",
 			settingsTitle:           "Ajustes de generación",
 			settingsSubtitle:        "Elige idioma, longitud y restricciones de la contraseña.",
@@ -127,15 +143,15 @@ func uiFor(p profile.Profile) uiText {
 		}
 	}
 	return uiText{
-		commandTagline:        "An implementation of the Tales Vault System",
-		subtitle:              "Pick words whose initials spell the password, one letter at a time.",
+		commandTagline: "An implementation of the Tales Vault System",
+		subtitle:       "Pick words whose initials spell the password, one letter at a time.",
 		helpBody: []string{
 			"Turn passwords into memorable mnemonic phrases.",
 			"Each password letter maps to a word with the same initial, following a grammatical template (noun, adjective, verb…).",
 			"Move across slots (←→) and phrases (↑↓). The roller on the left shows available words; use n/p or the mouse wheel to change.",
 			"When you are done, press Enter to see the final result and phrases ready to memorize.",
 		},
-		helpShortcutsTitle:  "Shortcuts",
+		helpShortcutsTitle: "Shortcuts",
 		helpShortcuts: []string{
 			"h/l · previous / next slot",
 			"j/k · previous / next phrase",
@@ -146,52 +162,61 @@ func uiFor(p profile.Profile) uiText {
 			"? · help",
 			"Esc · quit",
 		},
-		helpDismiss:           "? / Enter / Esc · close",
-		password:              "Password",
-		entropy:               "Entropy",
-		noWords:               "No words available for this slot.",
-		noWordsHint:           "Try another slot (←/→) or block (↑/↓).",
-		randomTitle:           "Randomize",
-		randomWord:            "w  current word",
-		randomPhrase:          "f  current block phrase",
-		randomAll:             "a  entire mnemonic",
-		randomCancel:          "Esc cancel",
-		changeLetter:          "Type a letter from the alphabet to change the password at this position:",
-		changeCancel:          "Esc cancel",
-		summaryTitle:          "Mnemonic phrases",
-		recovery:              "Recovery: take the first letter of each word (strip accents, ñ→n).",
-		cancelled:             "Cancelled.",
-		setupSubtitle:         "Choose language and generation options before you start.",
-		setupHelp:             "j/k · move  Space · select  g · start  Esc · quit",
-		settingsBarPrefix:     "Settings",
-		settingsTitle:         "Generation settings",
-		settingsSubtitle:      "Choose language, length, and password constraints.",
-		settingsLanguage:      "Language",
-		settingsPhrases:       "Phrases",
-		settingsAllowAdjacent: "No adjacent equal letters",
+		helpDismiss:  "? / Enter / Esc · close",
+		password:     "Password",
+		entropy:      "Entropy",
+		noWords:      "No words available for this slot.",
+		noWordsHint:  "Try another slot (←/→) or block (↑/↓).",
+		randomTitle:  "Randomize",
+		randomWord:   "w  current word",
+		randomPhrase: "f  current block phrase",
+		randomAll:    "a  entire mnemonic",
+		randomLLM:    "l  AI re-render",
+		randomCancel: "Esc cancel",
+		changeLetter: "Type a letter from the alphabet to change the password at this position:",
+		changeCancel: "Esc cancel",
+		summaryTitle: "Mnemonic phrases",
+		recovery:     "Recovery: take the first letter of each word (strip accents, ñ→n).",
+		cancelled:    "Cancelled.",
+		welcomeTitle: "First run",
+		welcomeBody: []string{
+			"This is your first time running tale. You can start with the defaults or open settings to choose language, length, and other options.",
+			"Settings are saved to ~/.tale/settings.toml and you can change them later with Tab in the word picker.",
+		},
+		welcomeDefaultsOption:   "Use defaults — %s, %d phrases, no adjacent repeats",
+		welcomeCustomizeOption:  "Configure before starting",
+		welcomeHelp:             "j/k · move  Enter · choose  Esc · quit",
+		setupHelp:               "j/k · move  Space · select  Enter · start  Esc · quit",
+		setupStart:              "Start",
+		settingsBarPrefix:       "Settings",
+		settingsTitle:           "Generation settings",
+		settingsSubtitle:        "Choose language, length, and password constraints.",
+		settingsLanguage:        "Language",
+		settingsPhrases:         "Phrases",
+		settingsAllowAdjacent:   "No adjacent equal letters",
 		settingsAdjacentPrevent: "Yes — no consecutive repeats; fewer typos when typing fast (with «rr» and similar pairs you may type only one letter)",
 		settingsAdjacentAllow:   "No — allow equal adjacent letters; slightly more entropy, but easier to mistype doubles when typing fast",
-		settingsListHelp:      "j/k · move  Space · select  1-3 · section  Esc · back",
+		settingsListHelp:        "j/k · move  Space · select  1-3 · section  Esc · back",
 		settingsListHelpPending: "j/k · move  Space · select or apply  Esc · discard",
-		settingsConfirmApply:  "Apply changes",
-		settingsConfirmDiscard: "Discard and go back",
-		settingsDiscardPrompt: "Discard unapplied changes?",
-		settingsDiscardHelp:   "y · discard   n / Esc · keep editing",
-		settingsPendingHint:   "Unapplied changes · Esc to exit",
+		settingsConfirmApply:    "Apply changes",
+		settingsConfirmDiscard:  "Discard and go back",
+		settingsDiscardPrompt:   "Discard unapplied changes?",
+		settingsDiscardHelp:     "y · discard   n / Esc · keep editing",
+		settingsPendingHint:     "Unapplied changes · Esc to exit",
 		settingsRegenPassword:   "The password and mnemonic phrases will be regenerated.",
 		settingsFocusHint:       "Tab · edit settings  ? · help",
-		phraseOptionSummary:   "%d phrases (%d chars) · ~%.0f bits",
-		phraseUseCase3:        "strict length limits or disposable accounts",
-		phraseUseCase4:        "occasional sign-ups on online services",
-		phraseUseCase5:        "recommended: email, banking, and password managers",
-		phraseUseCase6:        "high security: vault master password or critical accounts",
-		phraseUseCase8:        "maximum security: long-lived secrets",
-		entropyBitsUnit:       "bits",
-		entropyFormula:        "~%.1f bits (%d chars × log₂(%d))",
-		yes:                   "yes",
-		no:                    "no",
-		quitPrompt:            "Quit and lose the current password and phrases?",
-		quitHelp:              "y · quit   n / Esc · stay",
+		phraseOptionSummary:     "%d phrases (%d chars) · ~%.0f bits",
+		phraseUseCase3:          "strict length limits or disposable accounts",
+		phraseUseCase4:          "occasional sign-ups on online services",
+		phraseUseCase5:          "recommended: email, banking, and password managers",
+		phraseUseCase6:          "high security: vault master password or critical accounts",
+		phraseUseCase8:          "maximum security: long-lived secrets",
+		entropyBitsUnit:         "bits",
+		entropyFormula:          "~%.1f bits (%d chars × log₂(%d))",
+		yes:                     "yes",
+		no:                      "no",
+		quitPrompt:              "Quit and lose the current password and phrases?",
+		quitHelp:                "y · quit   n / Esc · stay",
 	}
 }
 

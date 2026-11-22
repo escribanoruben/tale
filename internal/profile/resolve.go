@@ -168,9 +168,9 @@ type NewLanguageOptions struct {
 
 // InitResult reports what was created during profile init.
 type InitResult struct {
-	ProfilePath string
-	DataPath    string
-	DataCopied  bool
+	ProfilePath    string
+	DataPath       string
+	DataCopied     bool
 	DataScaffolded bool
 }
 

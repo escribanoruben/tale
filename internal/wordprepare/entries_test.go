@@ -46,6 +46,17 @@ func TestIsBlocked(t *testing.T) {
 	if isBlocked("casa", "es") {
 		t.Fatal("expected casa not to be blocked")
 	}
+	// suitability blocklist (sexual aggression, gore, morbidity)
+	for _, w := range []string{"rapist", "murder", "corpse", "torture", "nazi", "hiv"} {
+		if !isBlocked(w, "en") {
+			t.Errorf("expected %q to be blocked", w)
+		}
+	}
+	for _, w := range []string{"violador", "fornicar", "asesinato", "torturar", "cadáver", "sida"} {
+		if !isBlocked(w, "es") {
+			t.Errorf("expected %q to be blocked", w)
+		}
+	}
 }
 
 func TestSpanishIsCommonEnough(t *testing.T) {

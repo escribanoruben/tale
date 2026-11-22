@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/escribanoruben/tale/internal/dictionary"
+	"github.com/escribanoruben/tale/internal/llm"
 	"github.com/escribanoruben/tale/internal/normalize"
 	"github.com/escribanoruben/tale/internal/password"
 	"github.com/escribanoruben/tale/internal/phrase"
@@ -45,7 +46,15 @@ type Session struct {
 	Done                   bool
 	Quitting               bool
 	Err                    error
-	dict                   *dictionary.Dictionary
+	// Story mode: per-block candidate pools (semantic ranking) and an
+	// optional LLM client for the polish re-render. Pools is nil when
+	// the strategy has no story pools (random, noun strategies, or
+	// languages without vectors) and the session falls back to the
+	// classic uniform flows.
+	Pools    [][][]string
+	Storyish bool
+	LLM      *llm.Client
+	dict     *dictionary.Dictionary
 }
 
 // NewSession builds a TUI session for the given profile and password.
@@ -69,14 +78,49 @@ func NewSession(p profile.Profile, password string, dict *dictionary.Dictionary,
 	for i := range s.Selections {
 		s.Selections[i] = make([]string, len(p.PhraseTemplate))
 	}
-	if err := s.randomFill(); err != nil {
-		return nil, err
+	s.Storyish = storyStrategy(p.Strategy)
+	if s.Storyish && phrase.SemanticAvailable(p, dict) {
+		// story mode: seed with the whole-story DP and cache the pools
+		// for rerolls; any failure falls back to the uniform fill
+		storyishFill(s)
+	}
+	if !s.Storyish || len(s.Pools) == 0 {
+		if err := s.randomFill(); err != nil {
+			return nil, err
+		}
 	}
 	if err := s.refreshCandidates(); err != nil {
 		return nil, err
 	}
 	s.syncRollerToSelection()
 	return s, nil
+}
+
+// storyStrategy reports whether the strategy is the chained story
+// (explicit or default); noun strategies and "random" are not.
+func storyStrategy(strategy string) bool {
+	return strategy == "" || strategy == profile.StrategyStory || strategy == profile.StrategyAliasStory
+}
+
+// storyishFill seeds the session with the whole-story DP result and
+// caches the per-block pools. Best effort: leaves Pools nil on error so
+// the caller falls back to the uniform fill.
+func storyishFill(s *Session) {
+	pools, err := phrase.StoryPoolsForPassword(s.Profile, s.Password, s.dict, phrase.Options{AllowRepeat: false})
+	if err != nil {
+		return
+	}
+	stories, err := phrase.SemanticStories(s.Profile, s.Blocks, s.dict, phrase.Options{AllowRepeat: false}, 1)
+	if err != nil {
+		return
+	}
+	s.Pools = pools
+	for i, words := range stories[0] {
+		copy(s.Selections[i], words)
+		for _, w := range words {
+			s.Used[normalize.Key(w)] = true
+		}
+	}
 }
 
 func (s *Session) randomFill() error {
@@ -279,17 +323,17 @@ func (s *Session) jumpToSlot(blockIndex, slotIndex int) error {
 
 // Model adapts Session to bubbletea.
 type Model struct {
-	session        *Session
-	settings       AppSettings
-	settingsCtrl   settingsController
-	settingsFocus         bool
+	session                *Session
+	settings               AppSettings
+	settingsCtrl           settingsController
+	settingsFocus          bool
 	settingsConfirmDiscard bool
-	languages      []string
-	keys           keyMap
-	mode           uiMode
-	width          int
-	click          clickTracker
-	hits           *hitTargets
+	languages              []string
+	keys                   keyMap
+	mode                   uiMode
+	width                  int
+	click                  clickTracker
+	hits                   *hitTargets
 }
 
 type keyMap struct {
@@ -451,7 +495,7 @@ func (m *Model) wheelCycleWord(zone hitZone, delta int) {
 }
 
 func (m Model) clickRandomOverlay(index int) (tea.Model, tea.Cmd) {
-	scopes := []string{"w", "p", "a"}
+	scopes := []string{"w", "p", "a", "l"}
 	if index >= 0 && index < len(scopes) {
 		if err := m.session.randomizeScope(scopes[index]); err != nil {
 			m.session.Err = err
@@ -502,7 +546,7 @@ func (m *Model) handlePhraseKeys(msg tea.KeyMsg) (handled bool, quit bool) {
 
 func (m Model) handleRandomMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
-	case "w", "f", "a":
+	case "w", "f", "a", "l":
 		scope := msg.String()
 		if scope == "f" {
 			scope = "p"

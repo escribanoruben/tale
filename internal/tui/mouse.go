@@ -23,6 +23,7 @@ const (
 	hitCurrentWord
 	hitRollerPanel
 	hitOverlay
+	hitWelcomeChoice
 )
 
 type hitZone struct {

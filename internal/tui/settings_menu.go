@@ -15,6 +15,7 @@ const (
 	settingsExitNone settingsExit = iota
 	settingsExitUnfocus
 	settingsExitApply
+	settingsExitStart
 	settingsExitQuitApp
 	settingsExitConfirmDiscard
 )
@@ -31,6 +32,7 @@ type settingsController struct {
 	focusOption   int
 	focusOnAction bool
 	focusAction   int
+	setupMode     bool
 }
 
 func newSettingsController(initial AppSettings) settingsController {
@@ -67,6 +69,9 @@ func (c *settingsController) totalOptionRows(languages []string) int {
 
 func (c *settingsController) totalFocusRows(languages []string, applied AppSettings) int {
 	n := c.totalOptionRows(languages)
+	if c.setupMode {
+		return n + 1
+	}
 	if c.hasPendingChanges(applied) {
 		n += settingsActionCount
 	}
@@ -303,7 +308,15 @@ func renderSettingsView(s AppSettings, languages []string, ctrl settingsControll
 		contentHits = append(contentHits, actionHits...)
 	}
 
-	lines = append(lines, "", renderWrapped(helpStyle, innerW, settingsListHelp(text, s, ctrl.draft)))
+	if ctrl.setupMode {
+		lines = append(lines, "")
+		actionLines, actionHits := setupStartActionLine(text, ctrl, len(lines), innerW)
+		lines = append(lines, actionLines...)
+		contentHits = append(contentHits, actionHits...)
+		lines = append(lines, "", renderWrapped(helpStyle, innerW, text.setupHelp))
+	} else {
+		lines = append(lines, "", renderWrapped(helpStyle, innerW, settingsListHelp(text, s, ctrl.draft)))
+	}
 	return strings.Join(lines, "\n"), contentHits
 }
 
@@ -366,6 +379,12 @@ func settingsOptionGroups(text uiText, ctrl settingsController, languages []stri
 	return lines, hits
 }
 
+func setupStartActionLine(text uiText, ctrl settingsController, lineBase, innerW int) ([]string, []hitZone) {
+	focused := ctrl.focusOnAction
+	line := settingsActionLine(focused, innerW, text.setupStart)
+	return []string{line}, []hitZone{fullRow(lineBase, lineBase, hitSettingsConfirm, 0)}
+}
+
 func settingsActionLines(text uiText, ctrl settingsController, applied AppSettings, lineBase, innerW int) ([]string, []hitZone) {
 	if !ctrl.hasPendingChanges(applied) {
 		return nil, nil
@@ -422,6 +441,9 @@ func handleSettingsKey(ctrl *settingsController, msg tea.KeyMsg, languages []str
 	case "k", "up":
 		ctrl.moveFocus(-1, languages, applied)
 	case " ", "enter":
+		if ctrl.setupMode && ctrl.focusOnAction {
+			return settingsExitStart
+		}
 		if ctrl.focusOnAction && ctrl.hasPendingChanges(applied) {
 			if ctrl.focusAction == settingsActionApply {
 				return settingsExitApply

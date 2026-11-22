@@ -39,5 +39,10 @@ func (p Profile) Validate() error {
 	if p.DataLayout != "" && p.DataLayout != "letter" {
 		return fmt.Errorf("unsupported data_layout %q", p.DataLayout)
 	}
+	switch p.Strategy {
+	case "", StrategyRandom, StrategyStory, StrategyAliasStory, StrategyNounField, StrategyNounPath:
+	default:
+		return fmt.Errorf("unsupported strategy %q (want random, story, noun_field or noun_path)", p.Strategy)
+	}
 	return nil
 }

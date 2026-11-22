@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
@@ -25,3 +25,30 @@ jobs:
 
       - name: Build
         run: go build -o tale ./cmd/tale
+
+  go-mod-tidy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - run: go mod tidy
+      - name: go.mod/go.sum aligned
+        run: git diff --exit-code go.mod go.sum
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # scan full history, not just the push
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Dependabot's token is read-only and cannot comment on PRs
+          # ("Resource not accessible by integration"): skip comments.
+          GITLEAKS_ENABLE_COMMENTS: "false"

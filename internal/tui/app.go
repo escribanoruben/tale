@@ -5,8 +5,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/escribanoruben/tale/internal/dictionary"
+	"github.com/escribanoruben/tale/internal/llm"
 	"github.com/escribanoruben/tale/internal/password"
 	"github.com/escribanoruben/tale/internal/profile"
+	"github.com/escribanoruben/tale/internal/settings"
 )
 
 // AppSettings are the user-visible generation options shown in the TUI.
@@ -32,20 +34,23 @@ type AppConfig struct {
 type appPhase int
 
 const (
-	appPhaseSetup appPhase = iota
+	appPhaseWelcome appPhase = iota
+	appPhaseSetup
 	appPhasePicker
 )
 
-// AppModel orchestrates setup and the word picker.
+// AppModel orchestrates welcome, setup, and the word picker.
 type AppModel struct {
-	phase     appPhase
-	cfg       AppConfig
-	settings  AppSettings
-	languages []string
-	setup     setupModel
-	picker    Model
-	setupHits *hitTargets
-	err       error
+	phase       appPhase
+	cfg         AppConfig
+	settings    AppSettings
+	languages   []string
+	welcome     welcomeModel
+	setup       setupModel
+	picker      Model
+	welcomeHits *hitTargets
+	setupHits   *hitTargets
+	err         error
 }
 
 // RunApp starts setup (if needed) and the mnemonic picker.
@@ -70,14 +75,16 @@ func RunApp(cfg AppConfig) error {
 	settings.Phrases = snapPhraseCount(settings.Phrases)
 
 	m := AppModel{
-		cfg:       cfg,
-		settings:  settings,
-		languages: languages,
-		setup:     newSetupModel(languages, settings),
-		setupHits: &hitTargets{},
+		cfg:         cfg,
+		settings:    settings,
+		languages:   languages,
+		welcome:     newWelcomeModel(settings),
+		setup:       newSetupModel(languages, settings),
+		welcomeHits: &hitTargets{},
+		setupHits:   &hitTargets{},
 	}
 	if cfg.ForceSetup {
-		m.phase = appPhaseSetup
+		m.phase = appPhaseWelcome
 	} else {
 		session, err := m.newSession()
 		if err != nil {
@@ -108,6 +115,8 @@ func (m AppModel) Init() tea.Cmd { return nil }
 
 func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m.phase {
+	case appPhaseWelcome:
+		return m.updateWelcome(msg)
 	case appPhaseSetup:
 		return m.updateSetup(msg)
 	default:
@@ -117,11 +126,74 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m AppModel) View() string {
 	switch m.phase {
+	case appPhaseWelcome:
+		return m.welcome.View(m.welcomeHits)
 	case appPhaseSetup:
 		return m.setup.View(m.setupHits)
 	default:
 		return m.picker.View()
 	}
+}
+
+func (m AppModel) updateWelcome(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if mouseMsg, ok := msg.(tea.MouseMsg); ok {
+		return m.handleWelcomeMouse(mouseMsg)
+	}
+
+	keyMsg, ok := msg.(tea.KeyMsg)
+	if !ok {
+		return m, nil
+	}
+	if keyMsg.String() == "esc" {
+		return m, tea.Quit
+	}
+
+	m.welcome.update(keyMsg)
+	switch keyMsg.String() {
+	case "enter", " ":
+		switch m.welcome.choice() {
+		case welcomeChoiceDefaults:
+			return m.startPickerFromWelcome()
+		case welcomeChoiceCustomize:
+			m.phase = appPhaseSetup
+		}
+	}
+	return m, nil
+}
+
+func (m AppModel) handleWelcomeMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
+	if msg.Action != tea.MouseActionPress {
+		return m, nil
+	}
+	if d := wheelDelta(msg); d != 0 {
+		key := "j"
+		if d < 0 {
+			key = "k"
+		}
+		m.welcome.update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(key)})
+		return m, nil
+	}
+	if !isLeftClick(msg) {
+		return m, nil
+	}
+	zone, ok := m.welcomeHits.at(msg.X, msg.Y)
+	if !ok || zone.kind != hitWelcomeChoice {
+		return m, nil
+	}
+	m.welcome.focus = zone.index
+	switch zone.index {
+	case welcomeChoiceDefaults:
+		return m.startPickerFromWelcome()
+	case welcomeChoiceCustomize:
+		m.phase = appPhaseSetup
+	}
+	return m, nil
+}
+
+func (m AppModel) startPickerFromWelcome() (tea.Model, tea.Cmd) {
+	settings := m.welcome.defaults
+	settings.Phrases = snapPhraseCount(settings.Phrases)
+	return m.startPickerWithSettings(settings)
 }
 
 func (m AppModel) updateSetup(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -138,9 +210,12 @@ func (m AppModel) updateSetup(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	langBefore := m.setup.ctrl.draft.Language
-	m.setup.update(keyMsg)
+	exit := m.setup.update(keyMsg)
 	if m.setup.ctrl.draft.Language != langBefore {
 		m.settings.Language = m.setup.ctrl.draft.Language
+	}
+	if exit == settingsExitStart {
+		return m.startPickerFromSetup()
 	}
 
 	switch keyMsg.String() {
@@ -151,7 +226,11 @@ func (m AppModel) updateSetup(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m AppModel) startPickerFromSetup() (tea.Model, tea.Cmd) {
-	m.settings = m.setup.toSettings()
+	return m.startPickerWithSettings(m.setup.toSettings())
+}
+
+func (m AppModel) startPickerWithSettings(settings AppSettings) (tea.Model, tea.Cmd) {
+	m.settings = settings
 	if err := m.saveSettings(); err != nil {
 		m.err = err
 		return m, tea.Quit
@@ -191,6 +270,8 @@ func (m AppModel) handleSetupMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	case hitSettingsPick:
 		m.setup.ctrl.selectOption(zone.extra, zone.index, m.languages)
 		m.settings.Language = m.setup.ctrl.draft.Language
+	case hitSettingsConfirm:
+		return m.startPickerFromSetup()
 	}
 	return m, nil
 }
@@ -363,7 +444,25 @@ func (m AppModel) newSession() (*Session, error) {
 			return nil, err
 		}
 	}
-	return NewSession(p, pass, dict, !m.settings.AllowAdjacentRepeats)
+	session, err := NewSession(p, pass, dict, !m.settings.AllowAdjacentRepeats)
+	if err != nil {
+		return nil, err
+	}
+	// LLM polish re-render: available when enabled in settings and the
+	// language ships vectors (story mode).
+	if base, err := settings.Load(); err == nil && base.LLMPolish &&
+		(session.Storyish && len(session.Pools) > 0) {
+		model := base.LLMModel
+		if model == "" {
+			model = llm.DefaultModel
+		}
+		session.LLM = llm.New(llm.Config{
+			URL:     base.LLMURL,
+			Model:   model,
+			Threads: base.LLMThreads,
+		})
+	}
+	return session, nil
 }
 
 func applyPasswordLength(p *profile.Profile, length int) error {

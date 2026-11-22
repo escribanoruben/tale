@@ -30,7 +30,7 @@ func parseRunConfig(args []string, forTUI bool) runConfig {
 	phrases := fs.Int("phrases", base.PhrasesOr(5), "number of mnemonic phrases (blocks)")
 	length := fs.Int("length", 0, "password length (overrides --phrases)")
 	allowAdjacent := fs.Bool("allow-adjacent-repeats", base.AllowAdjacentRepeats, "allow consecutive identical password characters")
-	password := fs.String("password", "", "existing password (TUI only, generated if empty)")
+	password := fs.String("password", "", "existing password (derives its passtale; TUI edits it)")
 	_ = fs.Parse(args)
 
 	languageFlag := false
@@ -73,9 +73,18 @@ func applyRunConfig(p *profile.Profile, cfg runConfig) error {
 }
 
 func persistRunConfig(cfg runConfig) error {
+	// preserve keys the TUI does not edit (LLM polish layer, ...)
+	existing, err := settings.Load()
+	if err != nil {
+		existing = settings.Default()
+	}
 	return settings.Save(settings.Settings{
 		Language:             cfg.Language,
 		Phrases:              cfg.Phrases,
 		AllowAdjacentRepeats: cfg.AllowAdjacentRepeats,
+		LLMPolish:            existing.LLMPolish,
+		LLMModel:             existing.LLMModel,
+		LLMURL:               existing.LLMURL,
+		LLMThreads:           existing.LLMThreads,
 	})
 }

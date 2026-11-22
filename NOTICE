@@ -1,0 +1,55 @@
+Tale — third-party notices
+============================
+
+This file documents licenses and attributions for components not covered
+by the MIT License in LICENSE.
+
+Software
+--------
+
+The tale source code (Go packages and CLI, excluding the curated word lists
+below) is licensed under the MIT License. See LICENSE.
+
+English word lists (internal/worddata/en/)
+------------------------------------------
+
+Derived from top-english-wordlists by david47k.
+
+- Source: https://github.com/david47k/top-english-wordlists
+- License: Creative Commons Attribution 3.0 Unported (CC-BY 3.0)
+- License URL: https://creativecommons.org/licenses/by/3.0/
+
+Changes made for tale: filtered by length and character set, deduplicated
+inflected forms, ranked within buckets, and split by initial letter and
+part of speech.
+
+Spanish word lists (internal/worddata/es/)
+------------------------------------------
+
+Derived from frequency.csv in doozan/spanish_data, which in turn derives from
+FrequencyWords (hermitdave/FrequencyWords).
+
+- Sources:
+  - https://github.com/doozan/spanish_data
+  - https://github.com/hermitdave/FrequencyWords
+- License: Creative Commons Attribution-ShareAlike 3.0 Unported (CC-BY-SA 3.0)
+- License URL: https://creativecommons.org/licenses/by-sa/3.0/
+
+Changes made for tale: lemma selection, frequency filtering, diminutive
+exclusion, accent normalization, and re-bucketing by initial letter and part
+of speech. The curated files in internal/worddata/es/ are distributed under
+CC-BY-SA 3.0.
+
+Semantic embeddings (internal/worddata/{en,es}/embeddings.bin)
+--------------------------------------------------------------
+
+Quantized vectors for the words above, extracted from fastText Common Crawl
+vectors and stored in tale's own binary format.
+
+- Source: https://fasttext.cc/ (cc.en.300.vec, cc.es.300.vec)
+- License: Creative Commons Attribution-ShareAlike 3.0 Unported (CC-BY-SA 3.0)
+- License URL: https://creativecommons.org/licenses/by-sa/3.0/
+
+Changes made for tale: restricted to embedded vocabulary words, int8
+quantization with per-vector scale, L2 normalization at load time. Regenerate
+with `make embeddings` (maintainers, requires network).
